@@ -14,8 +14,9 @@ RUN apt-get update && \
 VOLUME /data
 
 COPY conf/ /etc/apache2/conf-enabled/
+COPY sites/ /etc/apache2/sites-enabled/
 COPY htdocs/ /var/www/html/
 
 CMD ["apache2ctl", "-D", "FOREGROUND"]
 
-EXPOSE 80
+EXPOSE 7539
