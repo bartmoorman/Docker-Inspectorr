@@ -16,9 +16,10 @@ RUN apt-get update \
 COPY conf/ /etc/apache2/conf-enabled/
 COPY sites/ /etc/apache2/sites-enabled/
 COPY htdocs/ /var/www/html/
+COPY apache2/ /etc/apache2/
 
 VOLUME /data
 
 EXPOSE 7539
 
-CMD ["apache2ctl", "-D", "FOREGROUND"]
+CMD ["/etc/apache2/start.sh"]

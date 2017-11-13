@@ -1,20 +1,24 @@
 <?php
-// Run via PHP built-in server
-// php -S 0.0.0.0:3240
 class IndexStatus {
+  public function __construct($file) {
+    $this->connected = false;
+    $dir = dirname($file);
 
-  public function __construct($db) {
-    try {
-      $this->db = new SQLite3($db, SQLITE3_OPEN_READONLY);
+    if (is_readable($file) && is_writable($dir)) {
+      $this->db = new SQLite3($file, SQLITE3_OPEN_READONLY);
       $this->connected = true;
-    } catch (Exception $e) {
-      $this->connected = false;
-
+    } else {
       echo "        <tbody class='table-danger'>" . PHP_EOL;
       echo "          <tr>" . PHP_EOL;
-      echo "            <td colspan='4'>Unable to open Plex database: {$db}</td>" . PHP_EOL;
-      echo '          </tr>' . PHP_EOL;
-      echo '        </tbody>' . PHP_EOL;
+
+      if (!is_readable($file)) {
+        echo "            <td colspan='4'>Cannot open Plex database. {$file} doesn't exist or is not readable.</td>" . PHP_EOL;
+      } elseif (!is_writable($dir)) {
+        echo "            <td colspan='4'>Cannot open Plex database. {$dir} is not writable.</td>" . PHP_EOL;
+      }
+
+      echo "          </tr>" . PHP_EOL;
+      echo "        </tbody>" . PHP_EOL;
     }
   }
 
@@ -94,8 +98,8 @@ EOQ;
       echo "            <td>{$summary['library_name']}</td>" . PHP_EOL;
       echo "            <td>{$item_count}</td>" . PHP_EOL;
       echo "            <td>{$status}</td>" . PHP_EOL;
-      echo '          </tr>' . PHP_EOL;
-      echo '        </tbody>' . PHP_EOL;
+      echo "          </tr>" . PHP_EOL;
+      echo "        </tbody>" . PHP_EOL;
 
       echo "        <tbody class='{$status}-{$summary['library_id']} collapse table-secondary'>" . PHP_EOL;
 
@@ -106,21 +110,21 @@ EOQ;
           $exclude_from_file_path = '/mnt/media/';
           $file_path = substr($detail['file'], strpos($detail['file'], $exclude_from_file_path) + strlen($exclude_from_file_path));
 
-          echo '          <tr>' . PHP_EOL;
+          echo "          <tr>" . PHP_EOL;
           echo "            <td>{$detail['library_id']}</td>" . PHP_EOL;
           echo "            <td>{$detail['library_name']}</td>" . PHP_EOL;
           echo "            <td>{$detail['item_id']}</td>" . PHP_EOL;
           echo "            <td>{$file_path}</td>" . PHP_EOL;
-          echo '          </tr>' . PHP_EOL;
+          echo "          </tr>" . PHP_EOL;
         }
       } else {
-          echo '          <tr>' . PHP_EOL;
+          echo "          <tr>" . PHP_EOL;
           echo "            <td colspan='4'>Details unavailable due to size!</td>" . PHP_EOL;
-          echo '          </tr>' . PHP_EOL;
+          echo "          </tr>" . PHP_EOL;
 
       }
 
-      echo '        </tbody>' . PHP_EOL;
+      echo "        </tbody>" . PHP_EOL;
     }
   }
 }
