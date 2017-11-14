@@ -13,8 +13,6 @@ RUN apt-get update \
  && apt-get clean \
  && rm --recursive --force /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY conf/ /etc/apache2/conf-enabled/
-COPY sites/ /etc/apache2/sites-enabled/
 COPY htdocs/ /var/www/html/
 COPY apache2/ /etc/apache2/
 
