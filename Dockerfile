@@ -16,8 +16,6 @@ RUN apt-get update \
 COPY htdocs/ /var/www/html/
 COPY apache2/ /etc/apache2/
 
-VOLUME /data
-
 EXPOSE 7539
 
 CMD ["/etc/apache2/start.sh"]
