@@ -93,7 +93,7 @@ EOQ;
       $item_count = number_format($summary['count']);
 
       echo "        <tbody class='table-{$class}'>" . PHP_EOL;
-      echo "          <tr data-toggle='collapse' data-target='.{$status}-{$summary['library_id']}' class='clickable' style='cursor:pointer'>" . PHP_EOL;
+      echo "          <tr data-toggle='collapse' data-target='.{$status}-{$summary['library_id']}' class='clickable-row' style='cursor:pointer'>" . PHP_EOL;
       echo "            <td>{$summary['library_id']}</td>" . PHP_EOL;
       echo "            <td>{$summary['library_name']}</td>" . PHP_EOL;
       echo "            <td>{$item_count}</td>" . PHP_EOL;
@@ -111,10 +111,8 @@ EOQ;
           $file_path = substr($detail['file'], strpos($detail['file'], $exclude_from_file_path) + strlen($exclude_from_file_path));
 
           echo "          <tr>" . PHP_EOL;
-          echo "            <td>{$detail['library_id']}</td>" . PHP_EOL;
-          echo "            <td>{$detail['library_name']}</td>" . PHP_EOL;
           echo "            <td>{$detail['item_id']}</td>" . PHP_EOL;
-          echo "            <td>{$file_path}</td>" . PHP_EOL;
+          echo "            <td colspan='3'>{$file_path}</td>" . PHP_EOL;
           echo "          </tr>" . PHP_EOL;
         }
       } else {
@@ -144,10 +142,10 @@ EOQ;
       <table class='table table-hover'>
         <thead>
           <tr>
-            <th>Library ID</th>
-            <th>Library Name</th>
-            <th>Item Count/ID</th>
-            <th>Status/File</th>
+            <th>Library/File&nbsp;ID</th>
+            <th>Library/File&nbsp;Name</th>
+            <th>Item&nbsp;Count</th>
+            <th>Status</th>
           </tr>
         </thead>
 <?php
