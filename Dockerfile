@@ -9,12 +9,17 @@ RUN apt-get update \
     apache2 \
     libapache2-mod-php \
     php-sqlite3 \
+    ssl-cert \
+ && a2enmod \
+    ssl \
  && apt-get autoremove --yes --purge \
  && apt-get clean \
  && rm --recursive --force /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY htdocs/ /var/www/html/
 COPY apache2/ /etc/apache2/
+
+VOLUME /config
 
 EXPOSE 7539
 
