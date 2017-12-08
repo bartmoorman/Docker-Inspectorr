@@ -8,17 +8,15 @@ class IndexStatus {
       $this->db = new SQLite3($file, SQLITE3_OPEN_READONLY);
       $this->connected = true;
     } else {
-      echo "        <tbody class='table-danger'>" . PHP_EOL;
-      echo "          <tr>" . PHP_EOL;
+      echo "          <tr class='danger'>" . PHP_EOL;
 
       if (!is_readable($file)) {
-        echo "            <td colspan='4'>Cannot open Plex database. {$file} doesn't exist or is not readable.</td>" . PHP_EOL;
+        echo "            <td colspan='4'>{$file} doesn't exist or is not readable!</td>" . PHP_EOL;
       } elseif (!is_writable($dir)) {
-        echo "            <td colspan='4'>Cannot open Plex database. {$dir} is not writable.</td>" . PHP_EOL;
+        echo "            <td colspan='4'>{$dir} is not writable!</td>" . PHP_EOL;
       }
 
       echo "          </tr>" . PHP_EOL;
-      echo "        </tbody>" . PHP_EOL;
     }
   }
 
@@ -92,16 +90,12 @@ EOQ;
     while ($summary = $summaries->fetchArray(SQLITE3_ASSOC)) {
       $item_count = number_format($summary['count']);
 
-      echo "        <tbody class='table-{$class}'>" . PHP_EOL;
-      echo "          <tr data-toggle='collapse' data-target='.{$status}-{$summary['library_id']}' class='clickable-row' style='cursor:pointer'>" . PHP_EOL;
+      echo "          <tr class='{$class}' data-toggle='collapse' data-target='.{$summary['library_id']}-{$status}'>" . PHP_EOL;
       echo "            <td>{$summary['library_id']}</td>" . PHP_EOL;
       echo "            <td>{$summary['library_name']}</td>" . PHP_EOL;
-      echo "            <td>{$item_count}</td>" . PHP_EOL;
+      echo "            <td><span class='btn badge'>{$item_count}</span></td>" . PHP_EOL;
       echo "            <td>{$status}</td>" . PHP_EOL;
       echo "          </tr>" . PHP_EOL;
-      echo "        </tbody>" . PHP_EOL;
-
-      echo "        <tbody class='{$status}-{$summary['library_id']} collapse table-secondary'>" . PHP_EOL;
 
       if ($summary['count'] < 250 || ($summary['count'] < 500 && isset($_REQUEST['omg'])) || ($summary['count'] < 1000 && isset($_REQUEST['wtf'])) || isset($_REQUEST['insanity'])) {
         $details = $this->runDetailedQuery($filters, $summary['library_id']);
@@ -110,19 +104,17 @@ EOQ;
           $exclude_from_file_path = '/mnt/media/';
           $file_path = substr($detail['file'], strpos($detail['file'], $exclude_from_file_path) + strlen($exclude_from_file_path));
 
-          echo "          <tr>" . PHP_EOL;
+          echo "          <tr class='collapse {$summary['library_id']}-{$status}'>" . PHP_EOL;
           echo "            <td>{$detail['item_id']}</td>" . PHP_EOL;
           echo "            <td colspan='3'>{$file_path}</td>" . PHP_EOL;
           echo "          </tr>" . PHP_EOL;
         }
       } else {
-          echo "          <tr>" . PHP_EOL;
+          echo "          <tr class='collapse {$summary['library_id']}-{$status}'>" . PHP_EOL;
           echo "            <td colspan='4'>Details unavailable due to size!</td>" . PHP_EOL;
           echo "          </tr>" . PHP_EOL;
 
       }
-
-      echo "        </tbody>" . PHP_EOL;
     }
   }
 }
@@ -133,13 +125,14 @@ EOQ;
     <title>Plex Index Status</title>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
-    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css' integrity='sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb' crossorigin='anonymous'>
+    <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
+    <link rel='stylesheet' href='//bootswatch.com/3/darkly/bootstrap.min.css'>
   </head>
   <body>
     <div class='container'>
       <h1>Plex Index Status</h1>
       <p>View the status of how Plex is indexing your media!</p>
-      <table class='table table-hover'>
+      <table class='table table-striped table-hover table-condensed'>
         <thead>
           <tr>
             <th>Library/File&nbsp;ID</th>
@@ -148,6 +141,7 @@ EOQ;
             <th>Status</th>
           </tr>
         </thead>
+        <tbody>
 <?php
 $obj = new IndexStatus('/data/com.plexapp.plugins.library.db');
 $obj->showStatus('unknown');
@@ -155,10 +149,11 @@ $obj->showStatus('failed');
 $obj->showStatus('pending');
 $obj->showStatus('complete');
 ?>
+        </tbody>
       </table>
     </div>
-    <script src='https://code.jquery.com/jquery-3.2.1.slim.min.js' integrity='sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN' crossorigin='anonymous'></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js' integrity='sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh' crossorigin='anonymous'></script>
-    <script src='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js' integrity='sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ' crossorigin='anonymous'></script>
+    <script src='//code.jquery.com/jquery-3.2.1.min.js'></script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js' integrity='sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh' crossorigin='anonymous'></script>
+    <script src='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js' integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa' crossorigin='anonymous'></script>
   </body>
 </html>
