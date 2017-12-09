@@ -154,7 +154,7 @@ EOQ;
         if ($statusCount['count'] > 0) {
           $statusPercent = round($statusCount['count'] / $librarySummary['count'] * 100);
 
-          echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$options['class']}' style='width:{$statusPercent}%;cursor:pointer'>{$statusPercent}%</div>" . PHP_EOL;
+          echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$options['class']}' style='width:{$statusPercent}%;cursor:pointer;'>{$statusPercent}%</div>" . PHP_EOL;
         }
       }
 
@@ -167,6 +167,7 @@ EOQ;
 
           echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
           echo "            <div class='panel-heading'>" . PHP_EOL;
+          echo "              <a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status} class='close''>&times;</a>" . PHP_EOL;
           echo "              <h4>{$statusUpper} <span class='badge'>{$countFmt}</span></h4>" . PHP_EOL;
           echo "            </div>" . PHP_EOL;
           echo "            <div class='panel-body'>" . PHP_EOL;
@@ -228,7 +229,9 @@ EOQ;
     <link rel='stylesheet' href='//bootswatch.com/3/cyborg/bootstrap.min.css'>
 -->
     <style>
-      html {zoom:125%}
+      html {
+        zoom:125%;
+      }
     </style>
   </head>
   <body>
