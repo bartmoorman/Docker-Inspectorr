@@ -1,121 +1,211 @@
 <?php
 class IndexStatus {
-  public function __construct($file) {
-    $this->connected = false;
-    $dir = dirname($file);
+  private $statuses = array(
+    'complete' => array('class' => 'success', 'text' => 'Indexing is complete'),
+    'pending' => array('class' => 'info', 'text' => 'Indexing has not started'),
+    'failed' => array('class' => 'warning', 'text' => 'Indexing failed (partially corrupt media)'),
+    'unknown' => array('class' => 'danger', 'text' => 'Indexing not possible (fully corrupt media)')
+  );
 
-    if (is_readable($file) && is_writable($dir)) {
-      $this->db = new SQLite3($file, SQLITE3_OPEN_READONLY);
-      $this->connected = true;
-    } else {
-      echo "          <tr class='danger'>" . PHP_EOL;
+  public function __construct($dbFile) {
+    $dbDir = dirname($dbFile);
 
-      if (!is_readable($file)) {
-        echo "            <td colspan='4'>{$file} doesn't exist or is not readable!</td>" . PHP_EOL;
-      } elseif (!is_writable($dir)) {
-        echo "            <td colspan='4'>{$dir} is not writable!</td>" . PHP_EOL;
+    $dbFileReadable = file_exists($dbFile) ? is_readable($dbFile) : false;
+    $dbDirWritable = file_exists($dbDir) ? is_writable($dbDir) : false;
+    $dbFileShmWritable = file_exists("{$dbFile}-shm") ? is_writable("{$dbFile}-shm") : $dbDirWritable;
+    $dbFileWalWritable = file_exists("{$dbFile}-wal") ? is_writable("{$dbFile}-wal") : $dbDirWritable;
+
+    if ($dbFileReadable && $dbDirWritable && $dbFileShmWritable && $dbFileWalWritable) {
+      if (!file_exists("{$dbFile}-shm") || !file_exists("{$dbFile}-wal")) {
+        echo "      <div class='alert alert-dismissable alert-info'>" . PHP_EOL;
+        echo "        <button type='button' class='close' data-dismiss='alert'>&times;</button>" . PHP_EOL;
+
+        if (!file_exists("{$dbFile}-shm")) {
+          echo "        <p><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
+        }
+
+        if (!file_exists("{$dbFile}-wal")) {
+          echo "        <p><strong>{$dbFile}-wal</strong> doesn't exist and will be created.</p>" . PHP_EOL;
+        }
+
+        echo "      </div>" . PHP_EOL;
       }
 
-      echo "          </tr>" . PHP_EOL;
+      $this->db = new SQLite3($dbFile, SQLITE3_OPEN_READONLY);
+      $this->showOverview();
+    } else {
+      echo "      <div class='alert alert-danger'>" . PHP_EOL;
+      echo "        <h4>Something went wrong.</h4>" . PHP_EOL;
+
+      if (!$dbFileReadable) {
+        echo "        <p>We can't read <strong>{$dbFile}</strong>!</p>" . PHP_EOL;
+      } elseif (!$dbDirWritable) {
+        echo "        <p>We can't write to <strong>{$dbDir}</strong>!</p>" . PHP_EOL;
+      } elseif (!$dbFileShmWritable) {
+        echo "        <p>We can't write to <strong>{$dbFile}-shm</strong>!</p>" . PHP_EOL;
+      } elseif (!$dbFileWalWritable) {
+        echo "        <p>We can't write to <strong>{$dbFile}-wal</strong>!</p>" . PHP_EOL;
+      } else {
+        echo "        <p>But we don't know what... Maybe check the logs?</p>" . PHP_EOL;
+      }
+
+      echo "      </div>" . PHP_EOL;
     }
   }
 
-  private function runSummaryQuery($filters) {
-    $query = <<<EOQ
-SELECT metadata_items.library_section_id AS 'library_id', library_sections.name AS 'library_name', COUNT(*) AS 'count'
-FROM metadata_items
-JOIN library_sections ON metadata_items.library_section_id = library_sections.id
-JOIN media_items ON metadata_items.id = media_items.metadata_item_id
-JOIN media_parts ON media_items.id = media_parts.media_item_id
-{$filters}
-GROUP BY metadata_items.library_section_id
-EOQ;
-    return $this->db->query($query);
-  }
-
-  private function runDetailedQuery($filters, $library_id) {
-    $query = <<<EOQ
-SELECT metadata_items.library_section_id AS 'library_id', library_sections.name AS 'library_name', metadata_items.id AS 'item_id', media_parts.file AS 'file'
-FROM metadata_items
-JOIN library_sections ON metadata_items.library_section_id = library_sections.id
-JOIN media_items ON metadata_items.id = media_items.metadata_item_id
-JOIN media_parts ON media_items.id = media_parts.media_item_id
-{$filters}
-AND metadata_items.library_section_id = {$library_id}
-ORDER BY metadata_items.library_section_id, media_parts.file
-EOQ;
-    return $this->db->query($query);
-  }
-
-  public function showStatus($status) {
-    if (!$this->connected) return;
-
+  private function getStatusFilters($status) {
     switch($status) {
       case 'complete':
         $filters = <<<EOF
-WHERE media_parts.extra_data LIKE '%indexes%'
-AND media_parts.extra_data NOT LIKE '%failureBIF%'
-AND media_parts.extra_data NOT LIKE ''
+AND mp.extra_data LIKE '%indexes%'
+AND mp.extra_data NOT LIKE '%failureBIF%'
+AND mp.extra_data NOT LIKE ''
 EOF;
-        $class = 'success';
         break;
       case 'pending':
         $filters = <<<EOQ
-WHERE media_parts.extra_data NOT LIKE '%indexes%'
-AND media_parts.extra_data NOT LIKE '%failureBIF%'
-AND media_parts.extra_data NOT LIKE ''
+AND mp.extra_data NOT LIKE '%indexes%'
+AND mp.extra_data NOT LIKE '%failureBIF%'
+AND mp.extra_data NOT LIKE ''
 EOQ;
-        $class = 'info';
         break;
       case 'failed':
         $filters = <<<EOQ
-WHERE media_parts.extra_data NOT LIKE '%indexes%'
-AND media_parts.extra_data LIKE '%failureBIF%'
-AND media_parts.extra_data NOT LIKE ''
+AND mp.extra_data NOT LIKE '%indexes%'
+AND mp.extra_data LIKE '%failureBIF%'
+AND mp.extra_data NOT LIKE ''
 EOQ;
-        $class = 'warning';
         break;
       case 'unknown':
         $filters = <<<EOQ
-WHERE media_parts.extra_data NOT LIKE '%indexes%'
-AND media_parts.extra_data NOT LIKE '%failureBIF%'
-AND media_parts.extra_data LIKE ''
+AND mp.extra_data NOT LIKE '%indexes%'
+AND mp.extra_data NOT LIKE '%failureBIF%'
+AND mp.extra_data LIKE ''
 EOQ;
-        $class = 'danger';
         break;
+      default:
+        return false;
     }
 
-    $summaries = $this->runSummaryQuery($filters);
+    return $filters;
+  }
 
-    while ($summary = $summaries->fetchArray(SQLITE3_ASSOC)) {
-      $item_count = number_format($summary['count']);
+  private function fetchLibrarySummary() {
+    $query = <<<EOQ
+SELECT lib.id, lib.name, COUNT(*) AS count
+FROM library_sections AS lib
+JOIN metadata_items AS meta ON meta.library_section_id = lib.id
+JOIN media_items AS mi ON mi.metadata_item_id = meta.id
+JOIN media_parts AS mp ON mp.media_item_id = mi.id
+GROUP BY lib.id
+ORDER BY lib.name
+EOQ;
 
-      echo "          <tr class='{$class}' data-toggle='collapse' data-target='.{$summary['library_id']}-{$status}'>" . PHP_EOL;
-      echo "            <td>{$summary['library_id']}</td>" . PHP_EOL;
-      echo "            <td>{$summary['library_name']}</td>" . PHP_EOL;
-      echo "            <td><span class='btn badge'>{$item_count}</span></td>" . PHP_EOL;
-      echo "            <td>{$status}</td>" . PHP_EOL;
-      echo "          </tr>" . PHP_EOL;
+    return $this->db->query($query);
+  }
 
-      if ($summary['count'] < 250 || ($summary['count'] < 500 && isset($_REQUEST['omg'])) || ($summary['count'] < 1000 && isset($_REQUEST['wtf'])) || isset($_REQUEST['insanity'])) {
-        $details = $this->runDetailedQuery($filters, $summary['library_id']);
+  private function fetchLibraryStatusCount($library, $status) {
+    $query = <<<EOQ
+SELECT COUNT(*) AS count
+FROM library_sections AS lib
+JOIN metadata_items AS meta ON meta.library_section_id = lib.id
+JOIN media_items AS mi ON mi.metadata_item_id = meta.id
+JOIN media_parts AS mp ON mp.media_item_id = mi.id
+WHERE lib.id = {$library}
+{$this->getStatusFilters($status)}
+EOQ;
 
-        while ($detail = $details->fetchArray(SQLITE3_ASSOC)) {
-          $exclude_from_file_path = '/mnt/media/';
-          $file_path = substr($detail['file'], strpos($detail['file'], $exclude_from_file_path) + strlen($exclude_from_file_path));
+    return $this->db->query($query);
+  }
 
-          echo "          <tr class='collapse {$summary['library_id']}-{$status}'>" . PHP_EOL;
-          echo "            <td>{$detail['item_id']}</td>" . PHP_EOL;
-          echo "            <td colspan='3'>{$file_path}</td>" . PHP_EOL;
-          echo "          </tr>" . PHP_EOL;
+  private function fetchLibraryStatusDetails($library, $status) {
+    $query = <<<EOQ
+SELECT meta.id, meta.title, mi.hints, mp.file
+FROM library_sections AS lib
+JOIN metadata_items AS meta ON meta.library_section_id = lib.id
+JOIN media_items AS mi ON mi.metadata_item_id = meta.id
+JOIN media_parts AS mp ON mp.media_item_id = mi.id
+WHERE lib.id = {$library}
+{$this->getStatusFilters($status)}
+ORDER BY mp.file
+EOQ;
+
+    return $this->db->query($query);
+  }
+
+  private function showOverview() {
+    echo "      <div class='panel panel-default'>" . PHP_EOL;
+    echo "        <div class='panel-body'>" . PHP_EOL;
+
+    $librarySummaries = $this->fetchLibrarySummary();
+
+    while ($librarySummary = $librarySummaries->fetchArray(SQLITE3_ASSOC)) {
+      $librarySummaryCountFmt = number_format($librarySummary['count']);
+
+      echo "          <h4>{$librarySummary['name']} <span class='badge'>{$librarySummaryCountFmt}</span></h4>" . PHP_EOL;
+      echo "          <div class='progress progress-striped'>" . PHP_EOL;
+
+      foreach ($this->statuses as $status => $options) {
+        $statusCount = $this->fetchLibraryStatusCount($librarySummary['id'], $status)->fetchArray(SQLITE3_ASSOC);
+        $libraryStatusCounts[$status] = $statusCount['count'];
+        $statusCountFmt = number_format($statusCount['count']);
+
+        if ($statusCount['count'] > 0) {
+          $statusPercent = round($statusCount['count'] / $librarySummary['count'] * 100);
+
+          echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$options['class']}' style='width:{$statusPercent}%'>{$statusPercent}%</div>" . PHP_EOL;
         }
-      } else {
-          echo "          <tr class='collapse {$summary['library_id']}-{$status}'>" . PHP_EOL;
-          echo "            <td colspan='4'>Details unavailable due to size!</td>" . PHP_EOL;
-          echo "          </tr>" . PHP_EOL;
+      }
 
+      echo "          </div>" . PHP_EOL;
+
+      foreach ($libraryStatusCounts as $status => $count) {
+        if ($count > 0) {
+          $statusUpper = ucfirst($status);
+
+          echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
+          echo "            <div class='panel-heading'>" . PHP_EOL;
+          echo "              <h4>{$statusUpper} <span class='badge'>{$count}</span></h4>" . PHP_EOL;
+          echo "            </div>" . PHP_EOL;
+          echo "            <div class='panel-body'>" . PHP_EOL;
+
+          if ($count < 250) {
+            $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
+
+            while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
+              parse_str($statusDetail['hints'], $hints);
+
+              if (array_key_exists('name', $hints) && array_key_exists('year', $hints)) {
+                  echo "              <p class='text-muted'>{$hints['name']} ({$hints['year']})</p>" . PHP_EOL;
+              } elseif (array_key_exists('episode', $hints) && array_key_exists('season', $hints) && array_key_exists('show', $hints)) {
+                  $season = str_pad($hints['season'], 2, 0, STR_PAD_LEFT);
+                  $episode = str_pad($hints['episode'], 2, 0, STR_PAD_LEFT);
+                  echo "              <p class='text-muted'>{$hints['show']} - s{$season}e{$episode} - {$statusDetail['title']}</p>" . PHP_EOL;
+              } else {
+                  echo "              <p>{$statusDetail['file']}</p>" . PHP_EOL;
+              }
+            }
+          } else {
+              echo "              <p>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
+          }
+
+          echo "            </div>" . PHP_EOL;
+          echo "          </div>" . PHP_EOL;
+        }
       }
     }
+
+    echo "        </div>" . PHP_EOL;
+    echo "        <div class='panel-footer'>" . PHP_EOL;
+
+    foreach ($this->statuses as $status => $options) {
+      $statusUpper = ucfirst($status);
+
+      echo "          <span class='label label-{$options['class']}' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
+    }
+
+    echo "        </div>" . PHP_EOL;
+    echo "      </div>" . PHP_EOL;
   }
 }
 ?>
@@ -127,32 +217,18 @@ EOQ;
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
     <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
     <link rel='stylesheet' href='//bootswatch.com/3/darkly/bootstrap.min.css'>
+    <style>
+      html {zoom:125%}
+    </style>
   </head>
   <body>
     <div class='container'>
       <h1>Plex Index Status</h1>
-      <p>View the status of how Plex is indexing your media!</p>
-      <table class='table table-striped table-hover table-condensed'>
-        <thead>
-          <tr>
-            <th>Library/File&nbsp;ID</th>
-            <th>Library/File&nbsp;Name</th>
-            <th>Item&nbsp;Count</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
 <?php
-$obj = new IndexStatus('/data/com.plexapp.plugins.library.db');
-$obj->showStatus('unknown');
-$obj->showStatus('failed');
-$obj->showStatus('pending');
-$obj->showStatus('complete');
+new IndexStatus('/data/com.plexapp.plugins.library.db');
 ?>
-        </tbody>
-      </table>
     </div>
-    <script src='//code.jquery.com/jquery-3.2.1.min.js'></script>
+    <script src='//code.jquery.com/jquery-3.2.1.slim.min.js' integrity='sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN' crossorigin='anonymous'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js' integrity='sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh' crossorigin='anonymous'></script>
     <script src='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js' integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa' crossorigin='anonymous'></script>
   </body>
