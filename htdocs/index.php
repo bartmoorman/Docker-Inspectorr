@@ -134,6 +134,8 @@ EOQ;
   }
 
   private function showOverview() {
+    $limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 250;
+
     echo "      <div class='panel panel-default'>" . PHP_EOL;
     echo "        <div class='panel-body'>" . PHP_EOL;
 
@@ -148,12 +150,11 @@ EOQ;
       foreach ($this->statuses as $status => $options) {
         $statusCount = $this->fetchLibraryStatusCount($librarySummary['id'], $status)->fetchArray(SQLITE3_ASSOC);
         $libraryStatusCounts[$status] = $statusCount['count'];
-        $statusCountFmt = number_format($statusCount['count']);
 
         if ($statusCount['count'] > 0) {
           $statusPercent = round($statusCount['count'] / $librarySummary['count'] * 100);
 
-          echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$options['class']}' style='width:{$statusPercent}%'>{$statusPercent}%</div>" . PHP_EOL;
+          echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$options['class']}' style='width:{$statusPercent}%;cursor:pointer'>{$statusPercent}%</div>" . PHP_EOL;
         }
       }
 
@@ -162,14 +163,15 @@ EOQ;
       foreach ($libraryStatusCounts as $status => $count) {
         if ($count > 0) {
           $statusUpper = ucfirst($status);
+          $countFmt = number_format($count);
 
           echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
           echo "            <div class='panel-heading'>" . PHP_EOL;
-          echo "              <h4>{$statusUpper} <span class='badge'>{$count}</span></h4>" . PHP_EOL;
+          echo "              <h4>{$statusUpper} <span class='badge'>{$countFmt}</span></h4>" . PHP_EOL;
           echo "            </div>" . PHP_EOL;
           echo "            <div class='panel-body'>" . PHP_EOL;
 
-          if ($count < 250) {
+          if ($limit == 0 || $count < $limit) {
             $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
 
             while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
@@ -187,6 +189,7 @@ EOQ;
             }
           } else {
               echo "              <p>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
+              echo "              <p><a href='?limit=0'>Remove limit</a></p>" . PHP_EOL;
           }
 
           echo "            </div>" . PHP_EOL;
@@ -204,6 +207,10 @@ EOQ;
       echo "          <span class='label label-{$options['class']}' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
     }
 
+    if (array_key_exists('limit', $_REQUEST)) {
+      echo "          <span class='pull-right'><a href='{$_SERVER['PHP_SELF']}'>Reset limit</a></span>" . PHP_EOL;
+    }
+
     echo "        </div>" . PHP_EOL;
     echo "      </div>" . PHP_EOL;
   }
@@ -217,6 +224,9 @@ EOQ;
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
     <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
     <link rel='stylesheet' href='//bootswatch.com/3/darkly/bootstrap.min.css'>
+<!--
+    <link rel='stylesheet' href='//bootswatch.com/3/cyborg/bootstrap.min.css'>
+-->
     <style>
       html {zoom:125%}
     </style>
