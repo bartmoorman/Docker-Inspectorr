@@ -18,7 +18,7 @@ class IndexStatus {
     if ($dbFileReadable && $dbDirWritable && $dbFileShmWritable && $dbFileWalWritable) {
       if (!file_exists("{$dbFile}-shm") || !file_exists("{$dbFile}-wal")) {
         echo "      <div class='alert alert-dismissable alert-info'>" . PHP_EOL;
-        echo "        <button type='button' class='close' data-dismiss='alert'>&times;</button>" . PHP_EOL;
+        echo "        <button class='close' data-dismiss='alert'>&times;</button>" . PHP_EOL;
 
         if (!file_exists("{$dbFile}-shm")) {
           echo "        <p><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
@@ -167,7 +167,7 @@ EOQ;
 
           echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
           echo "            <div class='panel-heading'>" . PHP_EOL;
-          echo "              <a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status} class='close''>&times;</a>" . PHP_EOL;
+          echo "              <button data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</button>" . PHP_EOL;
           echo "              <h4>{$statusUpper} <span class='badge'>{$countFmt}</span></h4>" . PHP_EOL;
           echo "            </div>" . PHP_EOL;
           echo "            <div class='panel-body'>" . PHP_EOL;
