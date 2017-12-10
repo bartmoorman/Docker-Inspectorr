@@ -21,15 +21,15 @@ class IndexStatus {
 
     if ($dbFileReadable && $dbDirWritable && $dbFileShmWritable && $dbFileWalWritable) {
       if (!file_exists("{$dbFile}-shm") || !file_exists("{$dbFile}-wal")) {
-        echo "      <div class='alert alert-dismissable alert-info'>" . PHP_EOL;
-        echo "        <span><a class='close' data-dismiss='alert'>&times;</a></span>" . PHP_EOL;
+        echo "      <div class='alert alert-dismissable alert-info mt-3'>" . PHP_EOL;
+        echo "        <span><button class='close' data-dismiss='alert'>&times;</button></span>" . PHP_EOL;
 
         if (!file_exists("{$dbFile}-shm")) {
-          echo "        <p><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
+          echo "        <p class='mb-0'><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
         }
 
         if (!file_exists("{$dbFile}-wal")) {
-          echo "        <p><strong>{$dbFile}-wal</strong> doesn't exist and will be created.</p>" . PHP_EOL;
+          echo "        <p class='mb-0'><strong>{$dbFile}-wal</strong> doesn't exist and will be created.</p>" . PHP_EOL;
         }
 
         echo "      </div>" . PHP_EOL;
@@ -39,19 +39,19 @@ class IndexStatus {
       $this->limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 500;
       $this->showOverview();
     } else {
-      echo "      <div class='alert alert-danger'>" . PHP_EOL;
-      echo "        <h4>Something went wrong.</h4>" . PHP_EOL;
+      echo "      <div class='alert alert-danger mt-3'>" . PHP_EOL;
+      echo "        <h4 class='alert-heading'>Something went wrong.</h4>" . PHP_EOL;
 
       if (!$dbFileReadable) {
-        echo "        <p>We can't read <strong>{$dbFile}</strong>!</p>" . PHP_EOL;
+        echo "        <p class='mb-0'>We can't read <strong>{$dbFile}</strong>!</p>" . PHP_EOL;
       } elseif (!$dbDirWritable) {
-        echo "        <p>We can't write to <strong>{$dbDir}</strong>!</p>" . PHP_EOL;
+        echo "        <p class='mb-0'>We can't write to <strong>{$dbDir}</strong>!</p>" . PHP_EOL;
       } elseif (!$dbFileShmWritable) {
-        echo "        <p>We can't write to <strong>{$dbFile}-shm</strong>!</p>" . PHP_EOL;
+        echo "        <p class='mb-0'>We can't write to <strong>{$dbFile}-shm</strong>!</p>" . PHP_EOL;
       } elseif (!$dbFileWalWritable) {
-        echo "        <p>We can't write to <strong>{$dbFile}-wal</strong>!</p>" . PHP_EOL;
+        echo "        <p class='mb-0'>We can't write to <strong>{$dbFile}-wal</strong>!</p>" . PHP_EOL;
       } else {
-        echo "        <p>But we don't know what... Maybe check the logs?</p>" . PHP_EOL;
+        echo "        <p class='mb-0'>But we don't know what... Maybe check the logs?</p>" . PHP_EOL;
       }
 
       echo "      </div>" . PHP_EOL;
@@ -162,8 +162,9 @@ EOQ;
   }
 
   private function showOverview() {
-    echo "      <div class='panel panel-default'>" . PHP_EOL;
-    echo "        <div class='panel-body'>" . PHP_EOL;
+    echo "      <div class='card border-secondary mt-3'>" . PHP_EOL;
+    echo "        <div class='card-header'><h3 class='mb-0'>Plex Index Status</h3></div>" . PHP_EOL;
+    echo "        <div class='card-body'>" . PHP_EOL;
 
     $librarySummaries = $this->fetchLibrarySummaries();
 
@@ -171,8 +172,8 @@ EOQ;
       $librarySummaryCountFmt = number_format($librarySummary['count']);
       $statusCounts = $this->getLibraryStatusCounts($librarySummary['id'], $librarySummary['count']);
 
-      echo "          <span><h4>{$librarySummary['name']} <span class='badge'>{$librarySummaryCountFmt}</span></h4></span>" . PHP_EOL;
-      echo "          <div class='progress progress-striped'>" . PHP_EOL;
+      echo "          <span><h5>{$librarySummary['name']} <span class='badge badge-pill badge-primary'>{$librarySummaryCountFmt}</span></h5></span>" . PHP_EOL;
+      echo "          <div class='progress mb-3'>" . PHP_EOL;
 
       foreach ($statusCounts['statuses'] as $status => $stats) {
         if ($statusCounts['fudge']['add'] > 0) {
@@ -183,7 +184,7 @@ EOQ;
           }
         }
 
-        echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%;'></div>" . PHP_EOL;
+        echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-striped progress-bar-animated bg-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%;'></div>" . PHP_EOL;
       }
 
       echo "          </div>" . PHP_EOL;
@@ -191,12 +192,14 @@ EOQ;
       foreach ($statusCounts['statuses'] as $status => $stats) {
         $statusUpper = ucfirst($status);
 
-        echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
-        echo "            <div class='panel-heading'>" . PHP_EOL;
-        echo "              <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</a></span>" . PHP_EOL;
-        echo "              <h4>{$statusUpper} <span class='badge'>{$stats['countFmt']}</span> <span class='badge'>{$stats['percentFmt']}%</span></h4>" . PHP_EOL;
-        echo "            </div>" . PHP_EOL;
-        echo "            <div class='panel-body'>" . PHP_EOL;
+        echo "          <div id='{$librarySummary['id']}-{$status}' class='collapse'>" . PHP_EOL;
+        echo "            <div class='card border-{$this->statuses[$status]['class']} mb-3'>" . PHP_EOL;
+        echo "              <div class='card-header'>" . PHP_EOL;
+        echo "                <span><button data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</button></span>" . PHP_EOL;
+        echo "                <span class='text-{$this->statuses[$status]['class']}'><h5>{$statusUpper}</h5></span>" . PHP_EOL;
+        echo "                <span><span class='badge badge-pill badge-primary'>{$stats['countFmt']}</span> <span class='badge badge-pill'>{$stats['percentFmt']}%</span></span>" . PHP_EOL;
+        echo "              </div>" . PHP_EOL;
+        echo "              <div class='card-body'>" . PHP_EOL;
 
         if ($this->limit == 0 || $stats['count'] < $this->limit) {
           $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
@@ -205,37 +208,38 @@ EOQ;
             parse_str($statusDetail['hints'], $hints);
 
             if (array_key_exists('name', $hints) && array_key_exists('year', $hints)) {
-                echo "              <p class='text-muted'>{$hints['name']} ({$hints['year']})</p>" . PHP_EOL;
+                echo "                <p class='card-text text-muted mb-0'>{$hints['name']} ({$hints['year']})</p>" . PHP_EOL;
             } elseif (array_key_exists('episode', $hints) && array_key_exists('season', $hints) && array_key_exists('show', $hints)) {
                 $season = str_pad($hints['season'], 2, 0, STR_PAD_LEFT);
                 $episode = str_pad($hints['episode'], 2, 0, STR_PAD_LEFT);
 
-                echo "              <p class='text-muted'>{$hints['show']} - s{$season}e{$episode} - {$statusDetail['title']}</p>" . PHP_EOL;
+                echo "                <p class='card-text text-muted mb-0'>{$hints['show']} - s{$season}e{$episode} - {$statusDetail['title']}</p>" . PHP_EOL;
             } else {
-                echo "              <p>{$statusDetail['file']}</p>" . PHP_EOL;
+                echo "                <p class='card-text mb-0'>{$statusDetail['file']}</p>" . PHP_EOL;
             }
           }
         } else {
-            echo "              <p>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
-            echo "              <p><a href='?limit=0'>Remove limit</a></p>" . PHP_EOL;
+            echo "                <p class='card-text'>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
+            echo "                <p class='card-text'><a href='?limit=0'>Remove limit</a></p>" . PHP_EOL;
         }
 
+        echo "              </div>" . PHP_EOL;
         echo "            </div>" . PHP_EOL;
         echo "          </div>" . PHP_EOL;
       }
     }
 
     echo "        </div>" . PHP_EOL;
-    echo "        <div class='panel-footer'>" . PHP_EOL;
+    echo "        <div class='card-footer'>" . PHP_EOL;
 
     foreach ($this->statuses as $status => $options) {
       $statusUpper = ucfirst($status);
 
-      echo "          <span class='label label-{$options['class']}' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
+      echo "          <span class='badge badge-{$options['class']}' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
     }
 
     if (array_key_exists('limit', $_REQUEST)) {
-      echo "          <span class='pull-right'><a href='{$_SERVER['PHP_SELF']}'>Reset limit</a></span>" . PHP_EOL;
+      echo "          <span class='float-right'><a href='{$_SERVER['PHP_SELF']}'>Reset limit</a></span>" . PHP_EOL;
     }
 
     echo "        </div>" . PHP_EOL;
@@ -249,22 +253,21 @@ EOQ;
     <title>Plex Index Status</title>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
-    <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
+    <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css' integrity='sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb' crossorigin='anonymous'>
 <?php
 $theme = array_key_exists('theme', $_REQUEST) ? $_REQUEST['theme'] : 'darkly';
 
-echo "    <link rel='stylesheet' href='//bootswatch.com/3/{$theme}/bootstrap.min.css'>" . PHP_EOL;
+echo "    <link rel='stylesheet' href='//bootswatch.com/4/{$theme}/bootstrap.min.css'>" . PHP_EOL;
 ?>
   </head>
   <body>
     <div class='container'>
-      <h1>Plex Index Status</h1>
 <?php
 new IndexStatus('/data/com.plexapp.plugins.library.db');
 ?>
     </div>
     <script src='//code.jquery.com/jquery-3.2.1.slim.min.js' integrity='sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN' crossorigin='anonymous'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js' integrity='sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh' crossorigin='anonymous'></script>
-    <script src='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js' integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa' crossorigin='anonymous'></script>
+    <script src='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js' integrity='sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ' crossorigin='anonymous'></script>
   </body>
 </html>
