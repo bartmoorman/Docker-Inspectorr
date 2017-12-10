@@ -1,5 +1,9 @@
 <?php
 class IndexStatus {
+  private $limit;
+  private $fudgeBelowPercent = 1;
+  private $fudgeAddPercent = 1;
+  private $displayPercentPrecision = 3;
   private $statuses = array(
     'complete' => array('class' => 'success', 'text' => 'Indexing is complete'),
     'pending' => array('class' => 'info', 'text' => 'Indexing has not started'),
@@ -18,7 +22,7 @@ class IndexStatus {
     if ($dbFileReadable && $dbDirWritable && $dbFileShmWritable && $dbFileWalWritable) {
       if (!file_exists("{$dbFile}-shm") || !file_exists("{$dbFile}-wal")) {
         echo "      <div class='alert alert-dismissable alert-info'>" . PHP_EOL;
-        echo "        <button class='close' data-dismiss='alert'>&times;</button>" . PHP_EOL;
+        echo "        <span><a class='close' data-dismiss='alert'>&times;</a></span>" . PHP_EOL;
 
         if (!file_exists("{$dbFile}-shm")) {
           echo "        <p><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
@@ -32,6 +36,7 @@ class IndexStatus {
       }
 
       $this->db = new SQLite3($dbFile, SQLITE3_OPEN_READONLY);
+      $this->limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 500;
       $this->showOverview();
     } else {
       echo "      <div class='alert alert-danger'>" . PHP_EOL;
@@ -53,7 +58,7 @@ class IndexStatus {
     }
   }
 
-  private function getStatusFilters($status) {
+  private function statusFilters($status) {
     switch($status) {
       case 'complete':
         $filters = <<<EOF
@@ -90,7 +95,7 @@ EOQ;
     return $filters;
   }
 
-  private function fetchLibrarySummary() {
+  private function fetchLibrarySummaries() {
     $query = <<<EOQ
 SELECT lib.id, lib.name, COUNT(*) AS count
 FROM library_sections AS lib
@@ -112,7 +117,7 @@ JOIN metadata_items AS meta ON meta.library_section_id = lib.id
 JOIN media_items AS mi ON mi.metadata_item_id = meta.id
 JOIN media_parts AS mp ON mp.media_item_id = mi.id
 WHERE lib.id = {$library}
-{$this->getStatusFilters($status)}
+{$this->statusFilters($status)}
 EOQ;
 
     return $this->db->query($query);
@@ -126,76 +131,97 @@ JOIN metadata_items AS meta ON meta.library_section_id = lib.id
 JOIN media_items AS mi ON mi.metadata_item_id = meta.id
 JOIN media_parts AS mp ON mp.media_item_id = mi.id
 WHERE lib.id = {$library}
-{$this->getStatusFilters($status)}
+{$this->statusFilters($status)}
 ORDER BY mp.file
 EOQ;
 
     return $this->db->query($query);
   }
 
-  private function showOverview() {
-    $limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 250;
+  private function getLibraryStatusCounts($library, $count) {
+    $statusCounts['fudge'] = array('add' => 0, 'remove' => 0);
 
+    foreach (array_keys($this->statuses) as $status) {
+      $statusCount = $this->fetchLibraryStatusCount($library, $status)->fetchArray(SQLITE3_ASSOC);
+
+      if ($statusCount['count'] > 0) {
+        $statusCounts['statuses'][$status]['count'] = $statusCount['count'];
+        $statusCounts['statuses'][$status]['countFmt'] = number_format($statusCount['count']);
+        $statusCounts['statuses'][$status]['percent'] = round($statusCount['count'] / $count * 100);
+        $statusCounts['statuses'][$status]['percentFmt'] = round($statusCount['count'] / $count * 100, $this->displayPercentPrecision);
+
+        if ($statusCounts['statuses'][$status]['percent'] < $this->fudgeBelowPercent) {
+          $statusCounts['fudge']['add']++;
+        } else {
+          $statusCounts['fudge']['remove']++;
+        }
+      }
+    }
+
+    return $statusCounts;
+  }
+
+  private function showOverview() {
     echo "      <div class='panel panel-default'>" . PHP_EOL;
     echo "        <div class='panel-body'>" . PHP_EOL;
 
-    $librarySummaries = $this->fetchLibrarySummary();
+    $librarySummaries = $this->fetchLibrarySummaries();
 
     while ($librarySummary = $librarySummaries->fetchArray(SQLITE3_ASSOC)) {
       $librarySummaryCountFmt = number_format($librarySummary['count']);
+      $statusCounts = $this->getLibraryStatusCounts($librarySummary['id'], $librarySummary['count']);
 
-      echo "          <h4>{$librarySummary['name']} <span class='badge'>{$librarySummaryCountFmt}</span></h4>" . PHP_EOL;
+      echo "          <span><h4>{$librarySummary['name']} <span class='badge'>{$librarySummaryCountFmt}</span></h4></span>" . PHP_EOL;
       echo "          <div class='progress progress-striped'>" . PHP_EOL;
 
-      foreach ($this->statuses as $status => $options) {
-        $statusCount = $this->fetchLibraryStatusCount($librarySummary['id'], $status)->fetchArray(SQLITE3_ASSOC);
-        $libraryStatusCounts[$status] = $statusCount['count'];
-
-        if ($statusCount['count'] > 0) {
-          $statusPercent = round($statusCount['count'] / $librarySummary['count'] * 100);
-
-          echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$options['class']}' style='width:{$statusPercent}%;cursor:pointer;'>{$statusPercent}%</div>" . PHP_EOL;
+      foreach ($statusCounts['statuses'] as $status => $stats) {
+        if ($statusCounts['fudge']['add'] > 0) {
+          if ($stats['percent'] < $this->fudgeBelowPercent) {
+            $stats['percent'] += $this->fudgeAddPercent / $statusCounts['fudge']['add'];
+          } else {
+            $stats['percent'] -= $this->fudgeAddPercent / $statusCounts['fudge']['add'] / $statusCounts['fudge']['remove'];
+          }
         }
+
+        echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%;'></div>" . PHP_EOL;
       }
 
       echo "          </div>" . PHP_EOL;
 
-      foreach ($libraryStatusCounts as $status => $count) {
-        if ($count > 0) {
-          $statusUpper = ucfirst($status);
-          $countFmt = number_format($count);
+      foreach ($statusCounts['statuses'] as $status => $stats) {
+        $statusUpper = ucfirst($status);
 
-          echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
-          echo "            <div class='panel-heading'>" . PHP_EOL;
-          echo "              <button data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</button>" . PHP_EOL;
-          echo "              <h4>{$statusUpper} <span class='badge'>{$countFmt}</span></h4>" . PHP_EOL;
-          echo "            </div>" . PHP_EOL;
-          echo "            <div class='panel-body'>" . PHP_EOL;
+        echo "          <div id='{$librarySummary['id']}-{$status}' class='panel panel-{$this->statuses[$status]['class']} collapse'>" . PHP_EOL;
+        echo "            <div class='panel-heading'>" . PHP_EOL;
+        echo "              <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</a></span>" . PHP_EOL;
+        echo "              <h4>{$statusUpper} <span class='badge'>{$stats['countFmt']}</span> <span class='badge'>{$stats['percentFmt']}%</span></h4>" . PHP_EOL;
+        echo "            </div>" . PHP_EOL;
+        echo "            <div class='panel-body'>" . PHP_EOL;
 
-          if ($limit == 0 || $count < $limit) {
-            $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
+        if ($this->limit == 0 || $stats['count'] < $this->limit) {
+          $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
 
-            while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
-              parse_str($statusDetail['hints'], $hints);
+          while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
+            parse_str($statusDetail['hints'], $hints);
 
-              if (array_key_exists('name', $hints) && array_key_exists('year', $hints)) {
-                  echo "              <p class='text-muted'>{$hints['name']} ({$hints['year']})</p>" . PHP_EOL;
-              } elseif (array_key_exists('episode', $hints) && array_key_exists('season', $hints) && array_key_exists('show', $hints)) {
-                  $season = str_pad($hints['season'], 2, 0, STR_PAD_LEFT);
-                  $episode = str_pad($hints['episode'], 2, 0, STR_PAD_LEFT);
-                  echo "              <p class='text-muted'>{$hints['show']} - s{$season}e{$episode} - {$statusDetail['title']}</p>" . PHP_EOL;
-              } else {
-                  echo "              <p>{$statusDetail['file']}</p>" . PHP_EOL;
-              }
+            if (array_key_exists('name', $hints) && array_key_exists('year', $hints)) {
+                echo "              <p class='text-muted'>{$hints['name']} ({$hints['year']})</p>" . PHP_EOL;
+            } elseif (array_key_exists('episode', $hints) && array_key_exists('season', $hints) && array_key_exists('show', $hints)) {
+                $season = str_pad($hints['season'], 2, 0, STR_PAD_LEFT);
+                $episode = str_pad($hints['episode'], 2, 0, STR_PAD_LEFT);
+
+                echo "              <p class='text-muted'>{$hints['show']} - s{$season}e{$episode} - {$statusDetail['title']}</p>" . PHP_EOL;
+            } else {
+                echo "              <p>{$statusDetail['file']}</p>" . PHP_EOL;
             }
-          } else {
-              echo "              <p>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
-              echo "              <p><a href='?limit=0'>Remove limit</a></p>" . PHP_EOL;
           }
-
-          echo "            </div>" . PHP_EOL;
-          echo "          </div>" . PHP_EOL;
+        } else {
+            echo "              <p>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
+            echo "              <p><a href='?limit=0'>Remove limit</a></p>" . PHP_EOL;
         }
+
+        echo "            </div>" . PHP_EOL;
+        echo "          </div>" . PHP_EOL;
       }
     }
 
@@ -224,15 +250,11 @@ EOQ;
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
     <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
-    <link rel='stylesheet' href='//bootswatch.com/3/darkly/bootstrap.min.css'>
-<!--
-    <link rel='stylesheet' href='//bootswatch.com/3/cyborg/bootstrap.min.css'>
--->
-    <style>
-      html {
-        zoom:125%;
-      }
-    </style>
+<?php
+$theme = array_key_exists('theme', $_REQUEST) ? $_REQUEST['theme'] : 'darkly';
+
+echo "    <link rel='stylesheet' href='//bootswatch.com/3/{$theme}/bootstrap.min.css'>" . PHP_EOL;
+?>
   </head>
   <body>
     <div class='container'>
