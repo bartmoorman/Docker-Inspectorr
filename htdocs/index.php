@@ -1,9 +1,9 @@
 <?php
 class IndexStatus {
   private $limit;
-  private $fudgeBelowPercent = 1;
-  private $fudgeAddPercent = 1;
-  private $displayPercentPrecision = 3;
+  private $fudgeAddPercent;
+  private $fudgeBelowPercent;
+  private $displayPercentPrecision;
   private $statuses = array(
     'complete' => array('class' => 'success', 'text' => 'Indexing is complete'),
     'pending' => array('class' => 'info', 'text' => 'Indexing has not started'),
@@ -36,11 +36,16 @@ class IndexStatus {
       }
 
       $this->db = new SQLite3($dbFile, SQLITE3_OPEN_READONLY);
+
       $this->limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 500;
+      $this->fudgeAddPercent = array_key_exists('fudgeAddPercent', $_REQUEST) ? $_REQUEST['fudgeAddPercent'] : 1;
+      $this->fudgeBelowPercent = array_key_exists('fudgeBelowPercent', $_REQUEST) ? $_REQUEST['fudgeBelowPercent'] : 1;
+      $this->displayPercentPrecision = array_key_exists('displayPercentPrecision', $_REQUEST) ? $_REQUEST['displayPercentPrecision'] : 3;
+
       $this->showOverview();
     } else {
       echo "      <div class='alert alert-danger mt-3'>" . PHP_EOL;
-      echo "        <h4 class='alert-heading'>Something went wrong.</h4>" . PHP_EOL;
+      echo "        <span><h4 class='alert-heading'>Something went wrong.</h4></span>" . PHP_EOL;
 
       if (!$dbFileReadable) {
         echo "        <p class='mb-0'>We can't read <strong>{$dbFile}</strong>!</p>" . PHP_EOL;
@@ -163,28 +168,38 @@ EOQ;
 
   private function showOverview() {
     echo "      <div class='card border-secondary mt-3'>" . PHP_EOL;
-    echo "        <div class='card-header'><h3 class='mb-0'>Plex Index Status</h3></div>" . PHP_EOL;
+    echo "        <div class='card-header'>" . PHP_EOL;
+    echo "          <span><h3 class='mb-0'>Plex Index Status</h3></span>" . PHP_EOL;
+    echo "        </div>" . PHP_EOL;
     echo "        <div class='card-body'>" . PHP_EOL;
 
     $librarySummaries = $this->fetchLibrarySummaries();
 
     while ($librarySummary = $librarySummaries->fetchArray(SQLITE3_ASSOC)) {
-      $librarySummaryCountFmt = number_format($librarySummary['count']);
       $statusCounts = $this->getLibraryStatusCounts($librarySummary['id'], $librarySummary['count']);
 
-      echo "          <span><h5>{$librarySummary['name']} <span class='badge badge-pill badge-primary'>{$librarySummaryCountFmt}</span></h5></span>" . PHP_EOL;
+      echo "          <span>" . PHP_EOL;
+      echo "            <h5>" . PHP_EOL;
+      echo "              {$librarySummary['name']}" . PHP_EOL;
+
+      foreach ($statusCounts['statuses'] as $status => $stats) {
+        echo "              <span class='badge badge-pill badge-{$this->statuses[$status]['class']}' title='{$stats['percentFmt']}%'>{$stats['countFmt']}</span>" . PHP_EOL;
+      }
+
+      echo "            </h5>" . PHP_EOL;
+      echo "          </span>" . PHP_EOL;
       echo "          <div class='progress mb-3'>" . PHP_EOL;
 
       foreach ($statusCounts['statuses'] as $status => $stats) {
         if ($statusCounts['fudge']['add'] > 0) {
           if ($stats['percent'] < $this->fudgeBelowPercent) {
-            $stats['percent'] += $this->fudgeAddPercent / $statusCounts['fudge']['add'];
+            $stats['percent'] += $this->fudgeAddPercent;
           } else {
-            $stats['percent'] -= $this->fudgeAddPercent / $statusCounts['fudge']['add'] / $statusCounts['fudge']['remove'];
+            $stats['percent'] -= $this->fudgeAddPercent * $statusCounts['fudge']['add'] / $statusCounts['fudge']['remove'];
           }
         }
 
-        echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-striped progress-bar-animated bg-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%;'></div>" . PHP_EOL;
+        echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-striped progress-bar-animated bg-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%;' onclick='void(0)'></div>" . PHP_EOL;
       }
 
       echo "          </div>" . PHP_EOL;
@@ -196,8 +211,7 @@ EOQ;
         echo "            <div class='card border-{$this->statuses[$status]['class']} mb-3'>" . PHP_EOL;
         echo "              <div class='card-header'>" . PHP_EOL;
         echo "                <span><button data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</button></span>" . PHP_EOL;
-        echo "                <span class='text-{$this->statuses[$status]['class']}'><h5>{$statusUpper}</h5></span>" . PHP_EOL;
-        echo "                <span><span class='badge badge-pill badge-primary'>{$stats['countFmt']}</span> <span class='badge badge-pill'>{$stats['percentFmt']}%</span></span>" . PHP_EOL;
+        echo "                <span><h5 class='text-{$this->statuses[$status]['class']} mb-0'>{$statusUpper}</h5></span>" . PHP_EOL;
         echo "              </div>" . PHP_EOL;
         echo "              <div class='card-body'>" . PHP_EOL;
 
@@ -220,7 +234,7 @@ EOQ;
           }
         } else {
             echo "                <p class='card-text'>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
-            echo "                <p class='card-text'><a href='?limit=0'>Remove limit</a></p>" . PHP_EOL;
+            echo "                <p class='card-text'><a href='?limit=0' class='text-danger'>Remove limit</a></p>" . PHP_EOL;
         }
 
         echo "              </div>" . PHP_EOL;
@@ -239,7 +253,7 @@ EOQ;
     }
 
     if (array_key_exists('limit', $_REQUEST)) {
-      echo "          <span class='float-right'><a href='{$_SERVER['PHP_SELF']}'>Reset limit</a></span>" . PHP_EOL;
+      echo "          <span class='float-right'><a href='{$_SERVER['PHP_SELF']}' class='text-success'>Reset limit</a></span>" . PHP_EOL;
     }
 
     echo "        </div>" . PHP_EOL;
