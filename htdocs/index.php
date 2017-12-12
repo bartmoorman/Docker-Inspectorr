@@ -1,15 +1,18 @@
 <?php
 class IndexStatus {
   private $limit;
-  private $fudgeAddPercent;
-  private $fudgeBelowPercent;
-  private $displayPercentPrecision;
+  private $percentPrecision;
+  private $showStats;
+
   private $statuses = array(
     'complete' => array('class' => 'success', 'text' => 'Indexing is complete'),
     'pending' => array('class' => 'info', 'text' => 'Indexing has not started'),
     'failed' => array('class' => 'warning', 'text' => 'Indexing failed (partially corrupt media)'),
     'unknown' => array('class' => 'danger', 'text' => 'Indexing not possible (fully corrupt media)')
   );
+
+  private $queryCount;
+  private $queryTime;
 
   public function __construct($dbFile) {
     $dbDir = dirname($dbFile);
@@ -22,7 +25,7 @@ class IndexStatus {
     if ($dbFileReadable && $dbDirWritable && $dbFileShmWritable && $dbFileWalWritable) {
       if (!file_exists("{$dbFile}-shm") || !file_exists("{$dbFile}-wal")) {
         echo "      <div class='alert alert-dismissable alert-info mt-3'>" . PHP_EOL;
-        echo "        <span><button class='close' data-dismiss='alert'>&times;</button></span>" . PHP_EOL;
+        echo "        <span><a class='close' style='cursor:default' onclick='void(0)' data-dismiss='alert'>&times;</a></span>" . PHP_EOL;
 
         if (!file_exists("{$dbFile}-shm")) {
           echo "        <p class='mb-0'><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
@@ -38,9 +41,8 @@ class IndexStatus {
       $this->db = new SQLite3($dbFile, SQLITE3_OPEN_READONLY);
 
       $this->limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 500;
-      $this->fudgeAddPercent = array_key_exists('fudgeAddPercent', $_REQUEST) ? $_REQUEST['fudgeAddPercent'] : 1;
-      $this->fudgeBelowPercent = array_key_exists('fudgeBelowPercent', $_REQUEST) ? $_REQUEST['fudgeBelowPercent'] : 1;
-      $this->displayPercentPrecision = array_key_exists('displayPercentPrecision', $_REQUEST) ? $_REQUEST['displayPercentPrecision'] : 3;
+      $this->percentPrecision = array_key_exists('percentPrecision', $_REQUEST) ? $_REQUEST['percentPrecision'] : 2;
+      $this->showStats = array_key_exists('showStats', $_REQUEST) ? $_REQUEST['showStats'] : false;
 
       $this->showOverview();
     } else {
@@ -100,6 +102,19 @@ EOQ;
     return $filters;
   }
 
+  private function runQuery($query) {
+    $start = microtime(true);
+
+    $result = $this->db->query($query);
+
+    $finish = microtime(true);
+
+    $this->queryTime += $finish - $start;
+    $this->queryCount++;
+
+    return $result;
+  }
+
   private function fetchLibrarySummaries() {
     $query = <<<EOQ
 SELECT lib.id, lib.name, COUNT(*) AS count
@@ -111,7 +126,7 @@ GROUP BY lib.id
 ORDER BY lib.name
 EOQ;
 
-    return $this->db->query($query);
+    return $this->runQuery($query);
   }
 
   private function fetchLibraryStatusCount($library, $status) {
@@ -125,7 +140,7 @@ WHERE lib.id = {$library}
 {$this->statusFilters($status)}
 EOQ;
 
-    return $this->db->query($query);
+    return $this->runQuery($query);
   }
 
   private function fetchLibraryStatusDetails($library, $status) {
@@ -140,26 +155,18 @@ WHERE lib.id = {$library}
 ORDER BY mp.file
 EOQ;
 
-    return $this->db->query($query);
+    return $this->runQuery($query);
   }
 
   private function getLibraryStatusCounts($library, $count) {
-    $statusCounts['fudge'] = array('add' => 0, 'remove' => 0);
-
     foreach (array_keys($this->statuses) as $status) {
       $statusCount = $this->fetchLibraryStatusCount($library, $status)->fetchArray(SQLITE3_ASSOC);
 
       if ($statusCount['count'] > 0) {
-        $statusCounts['statuses'][$status]['count'] = $statusCount['count'];
-        $statusCounts['statuses'][$status]['countFmt'] = number_format($statusCount['count']);
-        $statusCounts['statuses'][$status]['percent'] = round($statusCount['count'] / $count * 100);
-        $statusCounts['statuses'][$status]['percentFmt'] = round($statusCount['count'] / $count * 100, $this->displayPercentPrecision);
-
-        if ($statusCounts['statuses'][$status]['percent'] < $this->fudgeBelowPercent) {
-          $statusCounts['fudge']['add']++;
-        } else {
-          $statusCounts['fudge']['remove']++;
-        }
+        $statusCounts[$status]['count'] = $statusCount['count'];
+        $statusCounts[$status]['countFmt'] = number_format($statusCount['count']);
+        $statusCounts[$status]['percent'] = round($statusCount['count'] / $count * 100);
+        $statusCounts[$status]['percentFmt'] = round($statusCount['count'] / $count * 100, $this->percentPrecision);
       }
     }
 
@@ -182,40 +189,37 @@ EOQ;
       echo "            <h5>" . PHP_EOL;
       echo "              {$librarySummary['name']}" . PHP_EOL;
 
-      foreach ($statusCounts['statuses'] as $status => $stats) {
-        echo "              <span class='badge badge-pill badge-{$this->statuses[$status]['class']}' title='{$stats['percentFmt']}%'>{$stats['countFmt']}</span>" . PHP_EOL;
+      foreach ($statusCounts as $status => $stats) {
+        echo "              <span class='badge badge-pill badge-{$this->statuses[$status]['class']}' style='cursor:default' data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' onclick='void(0)'>{$stats['countFmt']}</span>" . PHP_EOL;
       }
 
       echo "            </h5>" . PHP_EOL;
       echo "          </span>" . PHP_EOL;
       echo "          <div class='progress mb-3'>" . PHP_EOL;
 
-      foreach ($statusCounts['statuses'] as $status => $stats) {
-        if ($statusCounts['fudge']['add'] > 0) {
-          if ($stats['percent'] < $this->fudgeBelowPercent) {
-            $stats['percent'] += $this->fudgeAddPercent;
-          } else {
-            $stats['percent'] -= $this->fudgeAddPercent * $statusCounts['fudge']['add'] / $statusCounts['fudge']['remove'];
-          }
-        }
-
-        echo "            <div data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='progress-bar progress-bar-striped progress-bar-animated bg-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%;' onclick='void(0)'></div>" . PHP_EOL;
+      foreach ($statusCounts as $status => $stats) {
+        echo "            <div class='progress-bar progress-bar-striped bg-{$this->statuses[$status]['class']}' style='width:{$stats['percent']}%'></div>" . PHP_EOL;
       }
 
       echo "          </div>" . PHP_EOL;
 
-      foreach ($statusCounts['statuses'] as $status => $stats) {
+      foreach ($statusCounts as $status => $stats) {
         $statusUpper = ucfirst($status);
 
         echo "          <div id='{$librarySummary['id']}-{$status}' class='collapse'>" . PHP_EOL;
         echo "            <div class='card border-{$this->statuses[$status]['class']} mb-3'>" . PHP_EOL;
         echo "              <div class='card-header'>" . PHP_EOL;
-        echo "                <span><button data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close'>&times;</button></span>" . PHP_EOL;
-        echo "                <span><h5 class='text-{$this->statuses[$status]['class']} mb-0'>{$statusUpper}</h5></span>" . PHP_EOL;
+        echo "                <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close' style='cursor:default' onclick='void(0)'>&times;</a></span>" . PHP_EOL;
+        echo "                <span>" . PHP_EOL;
+        echo "                  <h5 class='text-{$this->statuses[$status]['class']} mb-0'>" . PHP_EOL;
+        echo "                    {$statusUpper}" . PHP_EOL;
+        echo "                    <span class='badge badge-pill badge-dark'>{$stats['percentFmt']}%</span>" . PHP_EOL;
+        echo "                  </h5>" . PHP_EOL;
+        echo "                </span>" . PHP_EOL;
         echo "              </div>" . PHP_EOL;
         echo "              <div class='card-body'>" . PHP_EOL;
 
-        if ($this->limit == 0 || $stats['count'] < $this->limit) {
+        if ($this->limit == 0 || $stats['count'] <= $this->limit) {
           $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
 
           while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
@@ -233,7 +237,7 @@ EOQ;
             }
           }
         } else {
-            echo "                <p class='card-text'>This list is too big! We saved your browser. You're welcome.</p>" . PHP_EOL;
+            echo "                <p class='card-text'>This list exceeds the current limit of <strong>{$this->limit}</strong>!</p>" . PHP_EOL;
             echo "                <p class='card-text'><a href='?limit=0' class='text-danger'>Remove limit</a></p>" . PHP_EOL;
         }
 
@@ -243,13 +247,20 @@ EOQ;
       }
     }
 
+    if ($this->showStats) {
+      $queryCountFmt = number_format($this->queryCount);
+      $queryTimeFmt = round($this->queryTime * 1000);
+
+      echo "          <span><small>{$queryCountFmt} queries took {$queryTimeFmt}ms</small></span>" . PHP_EOL;
+    }
+
     echo "        </div>" . PHP_EOL;
     echo "        <div class='card-footer'>" . PHP_EOL;
 
     foreach ($this->statuses as $status => $options) {
       $statusUpper = ucfirst($status);
 
-      echo "          <span class='badge badge-{$options['class']}' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
+      echo "          <span class='badge badge-{$options['class']}' style='cursor:help' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
     }
 
     if (array_key_exists('limit', $_REQUEST)) {
