@@ -116,12 +116,17 @@ EOQ;
   }
 
   private function fetchLibrarySummaries() {
+    $excludeIDs = implode("','", explode(',', getenv('EXCLUDE_LIBRARY_IDS')));
+    $excludeNames = implode("','", explode(',', getenv('EXCLUDE_LIBRARY_NAMES')));
+
     $query = <<<EOQ
 SELECT lib.id, lib.name, COUNT(*) AS count
 FROM library_sections AS lib
 JOIN metadata_items AS meta ON meta.library_section_id = lib.id
 JOIN media_items AS mi ON mi.metadata_item_id = meta.id
 JOIN media_parts AS mp ON mp.media_item_id = mi.id
+WHERE lib.id NOT IN ('{$excludeIDs}')
+AND lib.name NOT IN ('{$excludeNames}')
 GROUP BY lib.id
 ORDER BY lib.name
 EOQ;
@@ -187,7 +192,7 @@ EOQ;
 
       echo "          <span>" . PHP_EOL;
       echo "            <h5>" . PHP_EOL;
-      echo "              {$librarySummary['name']}" . PHP_EOL;
+      echo "              {$librarySummary['id']} : {$librarySummary['name']}" . PHP_EOL;
 
       foreach ($statusCounts as $status => $stats) {
         echo "              <span class='badge badge-pill badge-{$this->statuses[$status]['class']}' style='cursor:default' data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' onclick='void(0)'>{$stats['countFmt']}</span>" . PHP_EOL;
@@ -291,8 +296,13 @@ echo "    <link rel='stylesheet' href='//bootswatch.com/4/{$theme}/bootstrap.min
 new IndexStatus('/data/com.plexapp.plugins.library.db');
 ?>
     </div>
-    <script src='//code.jquery.com/jquery-3.2.1.slim.min.js' integrity='sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN' crossorigin='anonymous'></script>
+    <script src='//code.jquery.com/jquery-3.2.1.min.js' integrity='sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDX2v5cMvDHcMakNTNrHIW2I5f' crossorigin='anonymous'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js' integrity='sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh' crossorigin='anonymous'></script>
     <script src='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js' integrity='sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ' crossorigin='anonymous'></script>
+    <script>
+    $(document).ready(function() {
+      $(".alert-dismissable").delay(7500).fadeTo('slow', 0).slideUp('slow');
+    });
+    </script>
   </body>
 </html>
