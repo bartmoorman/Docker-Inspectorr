@@ -69,30 +69,30 @@ class IndexStatus {
     switch($status) {
       case 'complete':
         $filters = <<<EOF
-AND mp.extra_data LIKE '%indexes%'
-AND mp.extra_data NOT LIKE '%failureBIF%'
-AND mp.extra_data NOT LIKE ''
+AND `media_parts`.`extra_data` LIKE '%indexes%'
+AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
+AND `media_parts`.`extra_data` NOT LIKE ''
 EOF;
         break;
       case 'pending':
         $filters = <<<EOQ
-AND mp.extra_data NOT LIKE '%indexes%'
-AND mp.extra_data NOT LIKE '%failureBIF%'
-AND mp.extra_data NOT LIKE ''
+AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
+AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
+AND `media_parts`.`extra_data` NOT LIKE ''
 EOQ;
         break;
       case 'failed':
         $filters = <<<EOQ
-AND mp.extra_data NOT LIKE '%indexes%'
-AND mp.extra_data LIKE '%failureBIF%'
-AND mp.extra_data NOT LIKE ''
+AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
+AND `media_parts`.`extra_data` LIKE '%failureBIF%'
+AND `media_parts`.`extra_data` NOT LIKE ''
 EOQ;
         break;
       case 'unknown':
         $filters = <<<EOQ
-AND mp.extra_data NOT LIKE '%indexes%'
-AND mp.extra_data NOT LIKE '%failureBIF%'
-AND mp.extra_data LIKE ''
+AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
+AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
+AND `media_parts`.`extra_data` LIKE ''
 EOQ;
         break;
       default:
@@ -116,19 +116,20 @@ EOQ;
   }
 
   private function fetchLibrarySummaries() {
-    $excludeIDs = implode("','", explode(',', getenv('EXCLUDE_LIBRARY_IDS')));
+    $excludeIDs = implode(',', explode(',', getenv('EXCLUDE_LIBRARY_IDS')));
     $excludeNames = implode("','", explode(',', getenv('EXCLUDE_LIBRARY_NAMES')));
 
     $query = <<<EOQ
-SELECT lib.id, lib.name, COUNT(*) AS count
-FROM library_sections AS lib
-JOIN metadata_items AS meta ON meta.library_section_id = lib.id
-JOIN media_items AS mi ON mi.metadata_item_id = meta.id
-JOIN media_parts AS mp ON mp.media_item_id = mi.id
-WHERE lib.id NOT IN ('{$excludeIDs}')
-AND lib.name NOT IN ('{$excludeNames}')
-GROUP BY lib.id
-ORDER BY lib.name
+SELECT `library_sections`.`id`, `library_sections`.`name`, `library_sections`.`section_type`, COUNT(*) AS `count`
+FROM `library_sections`
+JOIN `metadata_items` ON `metadata_items`.`library_section_id` = `library_sections`.`id`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `library_sections`.`id` NOT IN ({$excludeIDs})
+AND `library_sections`.`name` NOT IN ('{$excludeNames}')
+AND `library_sections`.`section_type` IN (1,2)
+GROUP BY `library_sections`.`id`
+ORDER BY `library_sections`.`name`
 EOQ;
 
     return $this->runQuery($query);
@@ -136,29 +137,61 @@ EOQ;
 
   private function fetchLibraryStatusCount($library, $status) {
     $query = <<<EOQ
-SELECT COUNT(*) AS count
-FROM library_sections AS lib
-JOIN metadata_items AS meta ON meta.library_section_id = lib.id
-JOIN media_items AS mi ON mi.metadata_item_id = meta.id
-JOIN media_parts AS mp ON mp.media_item_id = mi.id
-WHERE lib.id = {$library}
+SELECT COUNT(*) AS `count`
+FROM `metadata_items`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `metadata_items`.`library_section_id` = {$library}
 {$this->statusFilters($status)}
 EOQ;
 
     return $this->runQuery($query);
   }
 
-  private function fetchLibraryStatusDetails($library, $status) {
+  private function fetchLibrarySectionLocations($library, $status) {
     $query = <<<EOQ
-SELECT meta.id, meta.title, mi.hints, mp.file
-FROM library_sections AS lib
-JOIN metadata_items AS meta ON meta.library_section_id = lib.id
-JOIN media_items AS mi ON mi.metadata_item_id = meta.id
-JOIN media_parts AS mp ON mp.media_item_id = mi.id
-WHERE lib.id = {$library}
+SELECT `section_locations`.`id`, `section_locations`.`root_path`, COUNT(*) AS `count`
+FROM `metadata_items`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+JOIN `section_locations` ON `section_locations`.`id` = `media_items`.`section_location_id`
+WHERE `metadata_items`.`library_section_id` = {$library}
 {$this->statusFilters($status)}
-ORDER BY mp.file
+GROUP BY `section_locations`.`id`
 EOQ;
+
+    return $this->runQuery($query);
+  }
+
+  private function fetchLibraryStatusDetails($type, $library, $section, $status) {
+    switch ($type) {
+      case 1:
+        $query = <<<EOQ
+SELECT `movie`.`title`, `movie`.`year`
+FROM `metadata_items` AS `movie`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `movie`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `movie`.`library_section_id` = {$library}
+AND `media_items`.`section_location_id` = {$section}
+{$this->statusFilters($status)}
+ORDER BY `movie`.`title_sort`;
+EOQ;
+        break;
+      case 2:
+        $query = <<<EOQ
+SELECT `show`.`title` AS `show_title`, `season`.`index` AS `season`, `episode`.`index` AS `episode`, `episode`.`title` AS `episode_title`
+FROM `metadata_items` AS `show`
+JOIN `metadata_items` AS `season` ON `season`.`parent_id` = `show`.`id`
+JOIN `metadata_items` AS `episode` ON `episode`.`parent_id` = `season`.`id`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `episode`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `show`.`library_section_id` = {$library}
+AND `media_items`.`section_location_id` = {$section}
+{$this->statusFilters($status)}
+ORDER BY `show`.`title_sort`, `season`.`index`, `episode`.`index`;
+EOQ;
+        break;
+    }
 
     return $this->runQuery($query);
   }
@@ -176,6 +209,20 @@ EOQ;
     }
 
     return $statusCounts;
+  }
+
+  private function getLibrarySectionLocations($library, $status, $count) {
+    $librarySectionLocations = $this->fetchLibrarySectionLocations($library, $status);
+
+    while ($librarySectionLocation = $librarySectionLocations->fetchArray(SQLITE3_ASSOC)) {
+      $libraryLocations[$librarySectionLocation['id']]['root_path'] = $librarySectionLocation['root_path'];
+      $libraryLocations[$librarySectionLocation['id']]['count'] = $librarySectionLocation['count'];
+      $libraryLocations[$librarySectionLocation['id']]['countFmt'] = number_format($librarySectionLocation['count']);
+      $libraryLocations[$librarySectionLocation['id']]['percent'] = round($librarySectionLocation['count'] / $count * 100);
+      $libraryLocations[$librarySectionLocation['id']]['percentFmt'] = round($librarySectionLocation['count'] / $count * 100, $this->percentPrecision);
+    }
+
+    return $libraryLocations;
   }
 
   private function showOverview() {
@@ -218,35 +265,52 @@ EOQ;
         echo "                <span>" . PHP_EOL;
         echo "                  <h5 class='text-{$this->statuses[$status]['class']} mb-0'>" . PHP_EOL;
         echo "                    {$statusUpper}" . PHP_EOL;
-        echo "                    <span class='badge badge-pill badge-dark'>{$stats['percentFmt']}%</span>" . PHP_EOL;
+        echo "                    <span class='badge badge-pill badge-dark' style='cursor:default'>{$stats['percentFmt']}%</span>" . PHP_EOL;
         echo "                  </h5>" . PHP_EOL;
         echo "                </span>" . PHP_EOL;
         echo "              </div>" . PHP_EOL;
-        echo "              <div class='card-body'>" . PHP_EOL;
 
-        if ($this->limit == 0 || $stats['count'] <= $this->limit) {
-          $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['id'], $status);
+        $sectionLocations = $this->getLibrarySectionLocations($librarySummary['id'], $status, $stats['count']);
+        $sectionCount = count($sectionLocations);
 
-          while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
-            parse_str($statusDetail['hints'], $hints);
-
-            if (array_key_exists('name', $hints) && array_key_exists('year', $hints)) {
-                echo "                <p class='card-text text-muted mb-0'>{$hints['name']} ({$hints['year']})</p>" . PHP_EOL;
-            } elseif (array_key_exists('episode', $hints) && array_key_exists('season', $hints) && array_key_exists('show', $hints)) {
-                $season = str_pad($hints['season'], 2, 0, STR_PAD_LEFT);
-                $episode = str_pad($hints['episode'], 2, 0, STR_PAD_LEFT);
-
-                echo "                <p class='card-text text-muted mb-0'>{$hints['show']} - s{$season}e{$episode} - {$statusDetail['title']}</p>" . PHP_EOL;
-            } else {
-                echo "                <p class='card-text mb-0'>{$statusDetail['file']}</p>" . PHP_EOL;
-            }
+        foreach ($sectionLocations as $sectionID => $sectionDetails) {
+          if ($sectionCount > 1) {
+            echo "              <div class='card-header'>" . PHP_EOL;
+            echo "                <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}-{$sectionID}' class='close' style='cursor:default' onclick='void(0)'>&plus;</a></span>" . PHP_EOL;
+            echo "                <span>" . PHP_EOL;
+            echo "                  {$sectionDetails['root_path']}" . PHP_EOL;
+            echo "                  <span class='badge badge-pill badge-dark' style='cursor:default' data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}-{$sectionID}' onclick='void(0)'>{$sectionDetails['countFmt']}</span>" . PHP_EOL;
+            echo "                </span>" . PHP_EOL;
+            echo "              </div>" . PHP_EOL;
+            echo "              <div id='{$librarySummary['id']}-{$status}-{$sectionID}' class='collapse'>" . PHP_EOL;
+          } else {
+            echo "              <div id='{$librarySummary['id']}-{$status}-{$sectionID}'>" . PHP_EOL;
           }
-        } else {
-            echo "                <p class='card-text'>This list exceeds the current limit of <strong>{$this->limit}</strong>!</p>" . PHP_EOL;
-            echo "                <p class='card-text'><a href='?limit=0' class='text-danger'>Remove limit</a></p>" . PHP_EOL;
+
+          echo "                <div class='card-body'>" . PHP_EOL;
+
+          if ($this->limit == 0 || $sectionDetails['count'] <= $this->limit) {
+            $statusDetails = $this->fetchLibraryStatusDetails($librarySummary['section_type'], $librarySummary['id'], $sectionID, $status);
+
+            while ($statusDetail = $statusDetails->fetchArray(SQLITE3_ASSOC)) {
+              if ($librarySummary['section_type'] == 1) {
+                  echo "                  <p class='card-text text-muted mb-0'>{$statusDetail['title']} ({$statusDetail['year']})</p>" . PHP_EOL;
+              } elseif ($librarySummary['section_type'] == 2) {
+                  $season = str_pad($statusDetail['season'], 2, 0, STR_PAD_LEFT);
+                  $episode = str_pad($statusDetail['episode'], 2, 0, STR_PAD_LEFT);
+
+                  echo "                  <p class='card-text text-muted mb-0'>{$statusDetail['show_title']} - s{$season}e{$episode} - {$statusDetail['episode_title']}</p>" . PHP_EOL;
+              }
+            }
+          } else {
+              echo "                  <p class='card-text'>This list exceeds the current limit of <strong>{$this->limit}</strong>!</p>" . PHP_EOL;
+              echo "                  <p class='card-text'><a href='?limit=0' class='text-danger'>Remove limit</a></p>" . PHP_EOL;
+          }
+
+          echo "                </div>" . PHP_EOL;
+          echo "              </div>" . PHP_EOL;
         }
 
-        echo "              </div>" . PHP_EOL;
         echo "            </div>" . PHP_EOL;
         echo "          </div>" . PHP_EOL;
       }
