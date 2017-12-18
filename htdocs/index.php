@@ -372,6 +372,7 @@ echo "    <link rel='stylesheet' href='//bootswatch.com/4/{$theme}/bootstrap.min
 ?>
   </head>
   <body>
+<!--
     <div class='container'>
       <nav class='navbar navnar-dark bg-primary'>
         <form>
@@ -413,6 +414,7 @@ foreach ($themes as $theme => $name) {
         </form>
       </nav>
     </div>
+-->
     <div class='container'>
 <?php
 new IndexStatus('/data/com.plexapp.plugins.library.db');
