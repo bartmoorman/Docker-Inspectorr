@@ -1,16 +1,21 @@
 <?php
 class IndexStatus {
+  private $defaultLimit = 500;
+  private $defaultPercentPrecision = 2;
+  private $defaultShowQueryStats = false;
+
   private $limit;
   private $percentPrecision;
-  private $showStats;
+  private $showQueryStats;
 
   private $statuses = array(
-    'complete' => array('class' => 'success', 'text' => 'Indexing is complete'),
-    'pending' => array('class' => 'info', 'text' => 'Indexing has not started'),
-    'failed' => array('class' => 'warning', 'text' => 'Indexing failed (partially corrupt media)'),
-    'unknown' => array('class' => 'danger', 'text' => 'Indexing not possible (fully corrupt media)')
+    'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete'),
+    'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started'),
+    'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed (partially corrupt media)'),
+    'unknown' => array('text' => 'Unknown', 'class' => 'danger', 'hint' => 'Indexing not possible (fully corrupt media)')
   );
 
+  private $queryStringArray;
   private $queryCount;
   private $queryTime;
 
@@ -40,9 +45,11 @@ class IndexStatus {
 
       $this->db = new SQLite3($dbFile, SQLITE3_OPEN_READONLY);
 
-      $this->limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : 500;
-      $this->percentPrecision = array_key_exists('percentPrecision', $_REQUEST) ? $_REQUEST['percentPrecision'] : 2;
-      $this->showStats = array_key_exists('showStats', $_REQUEST) ? $_REQUEST['showStats'] : false;
+      $this->limit = array_key_exists('limit', $_REQUEST) ? $_REQUEST['limit'] : $this->defaultLimit;
+      $this->percentPrecision = array_key_exists('percentPrecision', $_REQUEST) ? $_REQUEST['percentPrecision'] : $this->defaultPercentPrecision;
+      $this->showQueryStats = array_key_exists('showQueryStats', $_REQUEST) ? $_REQUEST['showQueryStats'] : $this->defaultShowQueryStats;
+
+      parse_str($_SERVER['QUERY_STRING'], $this->queryStringArray);
 
       $this->showOverview();
     } else {
@@ -225,7 +232,20 @@ EOQ;
     return $libraryLocations;
   }
 
+  private function buildQueryString($queryData) {
+    if (count($queryData)) {
+      $queryString = '?' . http_build_query($queryData);
+    } else {
+      $queryString = '.';
+    }
+
+    return $queryString;
+  }
+
   private function showOverview() {
+    $removeLimitQueryString = $this->buildQueryString(array_merge($this->queryStringArray, array('limit' => 0)));
+    $resetLimitQueryString = $this->buildQueryString(array_diff_key($this->queryStringArray, array('limit' => $this->defaultLimit)));
+
     echo "      <div class='card border-secondary mt-3'>" . PHP_EOL;
     echo "        <div class='card-header'>" . PHP_EOL;
     echo "          <span><h3 class='mb-0'>Plex Index Status</h3></span>" . PHP_EOL;
@@ -238,14 +258,14 @@ EOQ;
       $statusCounts = $this->getLibraryStatusCounts($librarySummary['id'], $librarySummary['count']);
 
       echo "          <span>" . PHP_EOL;
-      echo "            <h5>" . PHP_EOL;
+      echo "            <h4>" . PHP_EOL;
       echo "              {$librarySummary['id']} : {$librarySummary['name']}" . PHP_EOL;
 
       foreach ($statusCounts as $status => $stats) {
         echo "              <span class='badge badge-pill badge-{$this->statuses[$status]['class']}' style='cursor:default' data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' onclick='void(0)'>{$stats['countFmt']}</span>" . PHP_EOL;
       }
 
-      echo "            </h5>" . PHP_EOL;
+      echo "            </h4>" . PHP_EOL;
       echo "          </span>" . PHP_EOL;
       echo "          <div class='progress mb-3'>" . PHP_EOL;
 
@@ -256,15 +276,13 @@ EOQ;
       echo "          </div>" . PHP_EOL;
 
       foreach ($statusCounts as $status => $stats) {
-        $statusUpper = ucfirst($status);
-
         echo "          <div id='{$librarySummary['id']}-{$status}' class='collapse'>" . PHP_EOL;
         echo "            <div class='card border-{$this->statuses[$status]['class']} mb-3'>" . PHP_EOL;
         echo "              <div class='card-header'>" . PHP_EOL;
         echo "                <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close' style='cursor:default' onclick='void(0)'>&times;</a></span>" . PHP_EOL;
         echo "                <span>" . PHP_EOL;
         echo "                  <h5 class='text-{$this->statuses[$status]['class']} mb-0'>" . PHP_EOL;
-        echo "                    {$statusUpper}" . PHP_EOL;
+        echo "                    {$this->statuses[$status]['text']}" . PHP_EOL;
         echo "                    <span class='badge badge-pill badge-dark' style='cursor:default'>{$stats['percentFmt']}%</span>" . PHP_EOL;
         echo "                  </h5>" . PHP_EOL;
         echo "                </span>" . PHP_EOL;
@@ -304,7 +322,7 @@ EOQ;
             }
           } else {
               echo "                  <p class='card-text'>This list exceeds the current limit of <strong>{$this->limit}</strong>!</p>" . PHP_EOL;
-              echo "                  <p class='card-text'><a href='?limit=0' class='text-danger'>Remove limit</a></p>" . PHP_EOL;
+              echo "                  <p class='card-text'><a href='{$removeLimitQueryString}' class='text-danger'>Remove limit</a></p>" . PHP_EOL;
           }
 
           echo "                </div>" . PHP_EOL;
@@ -316,7 +334,7 @@ EOQ;
       }
     }
 
-    if ($this->showStats) {
+    if ($this->showQueryStats) {
       $queryCountFmt = number_format($this->queryCount);
       $queryTimeFmt = round($this->queryTime * 1000);
 
@@ -326,17 +344,16 @@ EOQ;
     echo "        </div>" . PHP_EOL;
     echo "        <div class='card-footer'>" . PHP_EOL;
 
-    foreach ($this->statuses as $status => $options) {
-      $statusUpper = ucfirst($status);
-
-      echo "          <span class='badge badge-{$options['class']}' style='cursor:help' title='{$options['text']}'>{$statusUpper}</span>" . PHP_EOL;
+    foreach ($this->statuses as $status) {
+      echo "          <span class='badge badge-{$status['class']}' style='cursor:help' title='{$status['hint']}'>{$status['text']}</span>" . PHP_EOL;
     }
 
     if (array_key_exists('limit', $_REQUEST)) {
-      echo "          <span class='float-right'><a href='{$_SERVER['PHP_SELF']}' class='text-success'>Reset limit</a></span>" . PHP_EOL;
+      echo "          <span class='float-right'><a href='{$resetLimitQueryString}' class='text-success'>Reset limit</a></span>" . PHP_EOL;
     }
 
     echo "        </div>" . PHP_EOL;
+
     echo "      </div>" . PHP_EOL;
   }
 }
@@ -355,6 +372,47 @@ echo "    <link rel='stylesheet' href='//bootswatch.com/4/{$theme}/bootstrap.min
 ?>
   </head>
   <body>
+    <div class='container'>
+      <nav class='navbar navnar-dark bg-primary'>
+        <form>
+          <select class='btn btn-dark btn-sm' name='theme' onchange='this.form.submit()'>
+<?php
+$themes = array(
+  'cerulean' => 'Cerulean',
+  'cosmo' => 'Cosmo',
+  'cyborg' => 'Cyborg',
+  'darkly' => 'Darkly (default)',
+  'flatly' => 'Flatly',
+  'journal' => 'Journal',
+  'litera' => 'Litera',
+  'lumen' => 'Lumen',
+  'lux' => 'Lux',
+  'materia' => 'Materia',
+  'minty' => 'Minty',
+  'pulse' => 'Pulse',
+  'sandstone' => 'Sandstone',
+  'simplex' => 'Simplex',
+  'sketchy' => 'Sketchy',
+  'slate' => 'Slate',
+  'solar' => 'Solar',
+  'spacelab' => 'Spacelab',
+  'superhero' => 'Superhero',
+  'united' => 'United',
+  'yeti' => 'Yeti'
+);
+
+foreach ($themes as $theme => $name) {
+  if ((array_key_exists('theme', $_REQUEST) && $theme == $_REQUEST['theme']) || (!array_key_exists('theme', $_REQUEST) && $theme == 'darkly')) {
+    echo "            <option value='{$theme}' selected='selected'>{$name}</option>" . PHP_EOL;
+  } else {
+    echo "            <option value='{$theme}'>{$name}</option>" . PHP_EOL;
+  }
+}
+?>
+          </select>
+        </form>
+      </nav>
+    </div>
     <div class='container'>
 <?php
 new IndexStatus('/data/com.plexapp.plugins.library.db');
