@@ -248,7 +248,7 @@ EOQ;
 
     echo "      <div class='card border-secondary mt-3'>" . PHP_EOL;
     echo "        <div class='card-header'>" . PHP_EOL;
-    echo "          <span><h3 class='mb-0'>Plex Index Status</h3></span>" . PHP_EOL;
+    echo "          <h3 class='mb-0'>Plex Index Status</h3>" . PHP_EOL;
     echo "        </div>" . PHP_EOL;
     echo "        <div class='card-body'>" . PHP_EOL;
 
@@ -257,7 +257,6 @@ EOQ;
     while ($librarySummary = $librarySummaries->fetchArray(SQLITE3_ASSOC)) {
       $statusCounts = $this->getLibraryStatusCounts($librarySummary['id'], $librarySummary['count']);
 
-      echo "          <span>" . PHP_EOL;
       echo "            <h4>" . PHP_EOL;
       echo "              {$librarySummary['id']} : {$librarySummary['name']}" . PHP_EOL;
 
@@ -266,7 +265,6 @@ EOQ;
       }
 
       echo "            </h4>" . PHP_EOL;
-      echo "          </span>" . PHP_EOL;
       echo "          <div class='progress mb-3'>" . PHP_EOL;
 
       foreach ($statusCounts as $status => $stats) {
@@ -280,29 +278,33 @@ EOQ;
         echo "            <div class='card border-{$this->statuses[$status]['class']} mb-3'>" . PHP_EOL;
         echo "              <div class='card-header'>" . PHP_EOL;
         echo "                <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}' class='close' style='cursor:default' onclick='void(0)'>&times;</a></span>" . PHP_EOL;
-        echo "                <span>" . PHP_EOL;
         echo "                  <h5 class='text-{$this->statuses[$status]['class']} mb-0'>" . PHP_EOL;
         echo "                    {$this->statuses[$status]['text']}" . PHP_EOL;
         echo "                    <span class='badge badge-pill badge-dark' style='cursor:default'>{$stats['percentFmt']}%</span>" . PHP_EOL;
         echo "                  </h5>" . PHP_EOL;
-        echo "                </span>" . PHP_EOL;
         echo "              </div>" . PHP_EOL;
 
         $sectionLocations = $this->getLibrarySectionLocations($librarySummary['id'], $status, $stats['count']);
         $sectionCount = count($sectionLocations);
 
         foreach ($sectionLocations as $sectionID => $sectionDetails) {
+          echo "              <div class='card-header'>" . PHP_EOL;
+
           if ($sectionCount > 1) {
-            echo "              <div class='card-header'>" . PHP_EOL;
             echo "                <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}-{$sectionID}' class='close' style='cursor:default' onclick='void(0)'>&plus;</a></span>" . PHP_EOL;
             echo "                <span>" . PHP_EOL;
             echo "                  {$sectionDetails['root_path']}" . PHP_EOL;
             echo "                  <span class='badge badge-pill badge-dark' style='cursor:default' data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}-{$sectionID}' onclick='void(0)'>{$sectionDetails['countFmt']}</span>" . PHP_EOL;
             echo "                </span>" . PHP_EOL;
             echo "              </div>" . PHP_EOL;
-            echo "              <div id='{$librarySummary['id']}-{$status}-{$sectionID}' class='collapse'>" . PHP_EOL;
+            echo "              <div id='{$librarySummary['id']}-{$status}-{$sectionID}' class='collapse collapse-mon'>" . PHP_EOL;
           } else {
-            echo "              <div id='{$librarySummary['id']}-{$status}-{$sectionID}'>" . PHP_EOL;
+            echo "                <span><a data-toggle='collapse' data-target='#{$librarySummary['id']}-{$status}-{$sectionID}' class='close' style='cursor:default' onclick='void(0)'>&minus;</a></span>" . PHP_EOL;
+            echo "                <span>" . PHP_EOL;
+            echo "                  {$sectionDetails['root_path']}" . PHP_EOL;
+            echo "                </span>" . PHP_EOL;
+            echo "              </div>" . PHP_EOL;
+            echo "              <div id='{$librarySummary['id']}-{$status}-{$sectionID}' class='collapse show collapse-mon'>" . PHP_EOL;
           }
 
           echo "                <div class='card-body'>" . PHP_EOL;
@@ -425,7 +427,15 @@ new IndexStatus('/data/com.plexapp.plugins.library.db');
     <script src='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js' integrity='sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ' crossorigin='anonymous'></script>
     <script>
     $(document).ready(function() {
-      $(".alert-dismissable").delay(7500).fadeTo('slow', 0).slideUp('slow');
+      $('.alert.alert-dismissable').delay(7500).fadeTo('slow', 0).slideUp('slow');
+
+      $('.collapse.collapse-mon').on('show.bs.collapse', function() {
+        $(this).prev('div').find('span a').hide().html('&minus;').fadeIn('slow');
+      });
+
+      $('.collapse.collapse-mon').on('hide.bs.collapse', function() {
+        $(this).prev('div').find('span a').hide().html('&plus;').fadeIn('slow');
+      });
     });
     </script>
   </body>
