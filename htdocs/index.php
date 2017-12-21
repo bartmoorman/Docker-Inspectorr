@@ -23,23 +23,15 @@ class IndexStatus {
     $dbDir = dirname($dbFile);
 
     $dbFileReadable = file_exists($dbFile) ? is_readable($dbFile) : false;
+    $dbFileWalReadable = file_exists("{$dbFile}-wal") ? is_readable("{$dbFile}-wal") : false;
     $dbDirWritable = file_exists($dbDir) ? is_writable($dbDir) : false;
     $dbFileShmWritable = file_exists("{$dbFile}-shm") ? is_writable("{$dbFile}-shm") : $dbDirWritable;
-    $dbFileWalWritable = file_exists("{$dbFile}-wal") ? is_writable("{$dbFile}-wal") : $dbDirWritable;
 
-    if ($dbFileReadable && $dbDirWritable && $dbFileShmWritable && $dbFileWalWritable) {
-      if (!file_exists("{$dbFile}-shm") || !file_exists("{$dbFile}-wal")) {
+    if ($dbFileReadable && $dbFileWalReadable && $dbDirWritable && $dbFileShmWritable) {
+      if (!file_exists("{$dbFile}-shm")) {
         echo "      <div class='alert alert-dismissable alert-info mt-3'>" . PHP_EOL;
         echo "        <span><a class='close' style='cursor:default' onclick='void(0)' data-dismiss='alert'>&times;</a></span>" . PHP_EOL;
-
-        if (!file_exists("{$dbFile}-shm")) {
-          echo "        <p class='mb-0'><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
-        }
-
-        if (!file_exists("{$dbFile}-wal")) {
-          echo "        <p class='mb-0'><strong>{$dbFile}-wal</strong> doesn't exist and will be created.</p>" . PHP_EOL;
-        }
-
+        echo "        <p class='mb-0'><strong>{$dbFile}-shm</strong> doesn't exist and will be created.</p>" . PHP_EOL;
         echo "      </div>" . PHP_EOL;
       }
 
@@ -57,13 +49,13 @@ class IndexStatus {
       echo "        <span><h4 class='alert-heading'>Something went wrong.</h4></span>" . PHP_EOL;
 
       if (!$dbFileReadable) {
-        echo "        <p class='mb-0'>We can't read <strong>{$dbFile}</strong>!</p>" . PHP_EOL;
+        echo "        <p class='mb-0'>We can't read from <strong>{$dbFile}</strong>!</p>" . PHP_EOL;
+      } elseif (!$dbFileWalReadable) {
+        echo "        <p class='mb-0'>We can't read from <strong>{$dbFile}-wal</strong>!</p>" . PHP_EOL;
       } elseif (!$dbDirWritable) {
         echo "        <p class='mb-0'>We can't write to <strong>{$dbDir}</strong>!</p>" . PHP_EOL;
       } elseif (!$dbFileShmWritable) {
         echo "        <p class='mb-0'>We can't write to <strong>{$dbFile}-shm</strong>!</p>" . PHP_EOL;
-      } elseif (!$dbFileWalWritable) {
-        echo "        <p class='mb-0'>We can't write to <strong>{$dbFile}-wal</strong>!</p>" . PHP_EOL;
       } else {
         echo "        <p class='mb-0'>But we don't know what... Maybe check the logs?</p>" . PHP_EOL;
       }
