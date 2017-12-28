@@ -11,6 +11,8 @@ RUN apt-get update \
     php-sqlite3 \
     ssl-cert \
  && a2enmod \
+    remoteip \
+    rewrite \
     ssl \
  && apt-get autoremove --yes --purge \
  && apt-get clean \
