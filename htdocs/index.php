@@ -240,7 +240,7 @@ EOQ;
 
     echo "      <div class='card border-secondary mt-3'>" . PHP_EOL;
     echo "        <div class='card-header'>" . PHP_EOL;
-    echo "          <h3 class='mb-0'>Plex Index Status</h3>" . PHP_EOL;
+    echo "          <h3 class='mb-0'>Plex Index Status <span class='fas fa-sync float-right' onclick='void(0)'></span></h3>" . PHP_EOL;
     echo "        </div>" . PHP_EOL;
     echo "        <div class='card-body'>" . PHP_EOL;
 
@@ -364,51 +364,9 @@ $theme = array_key_exists('theme', $_REQUEST) ? $_REQUEST['theme'] : 'darkly';
 
 echo "    <link rel='stylesheet' href='//bootswatch.com/4/{$theme}/bootstrap.min.css'>" . PHP_EOL;
 ?>
+    <link rel='stylesheet' href='//use.fontawesome.com/releases/v5.0.2/css/all.css' integrity='sha384-bJB2Wn8ZuuMwYA12t6nmPqVTqT64ruKTAWqdxs/Oal3vexA7RPAo3FtVU5hIil2E' crossorigin='anonymous'>
   </head>
   <body>
-<!--
-    <div class='container'>
-      <nav class='navbar navnar-dark bg-primary'>
-        <form>
-          <select class='btn btn-dark btn-sm' name='theme' onchange='this.form.submit()'>
-<?php
-$themes = array(
-  'cerulean' => 'Cerulean',
-  'cosmo' => 'Cosmo',
-  'cyborg' => 'Cyborg',
-  'darkly' => 'Darkly (default)',
-  'flatly' => 'Flatly',
-  'journal' => 'Journal',
-  'litera' => 'Litera',
-  'lumen' => 'Lumen',
-  'lux' => 'Lux',
-  'materia' => 'Materia',
-  'minty' => 'Minty',
-  'pulse' => 'Pulse',
-  'sandstone' => 'Sandstone',
-  'simplex' => 'Simplex',
-  'sketchy' => 'Sketchy',
-  'slate' => 'Slate',
-  'solar' => 'Solar',
-  'spacelab' => 'Spacelab',
-  'superhero' => 'Superhero',
-  'united' => 'United',
-  'yeti' => 'Yeti'
-);
-
-foreach ($themes as $theme => $name) {
-  if ((array_key_exists('theme', $_REQUEST) && $theme == $_REQUEST['theme']) || (!array_key_exists('theme', $_REQUEST) && $theme == 'darkly')) {
-    echo "            <option value='{$theme}' selected='selected'>{$name}</option>" . PHP_EOL;
-  } else {
-    echo "            <option value='{$theme}'>{$name}</option>" . PHP_EOL;
-  }
-}
-?>
-          </select>
-        </form>
-      </nav>
-    </div>
--->
     <div class='container'>
 <?php
 new IndexStatus('/data/com.plexapp.plugins.library.db');
@@ -420,6 +378,11 @@ new IndexStatus('/data/com.plexapp.plugins.library.db');
     <script>
     $(document).ready(function() {
       $('.alert.alert-dismissable').delay(7500).fadeTo('slow', 0).slideUp('slow');
+
+      $('.fas.fa-sync').on('click', function() {
+        $(this).addClass('fa-spin');
+        location.reload(0);
+      });
 
       $('.collapse.collapse-mon').on('show.bs.collapse', function() {
         $(this).prev('div').find('span a').hide().html('&minus;').fadeIn('slow');
