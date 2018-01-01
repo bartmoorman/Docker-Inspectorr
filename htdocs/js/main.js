@@ -1,8 +1,13 @@
 $(document).ready(function() {
+  function addStatus(status) {
+    $(`<span class='badge badge-${status.class} mr-2' title='${status.hint}'>${status.text}</span>`)
+      .appendTo('#statuses');
+  }
+
   function addLibrary(library) {
     $(`<div id='library-${library.id}'></div>`)
       .appendTo('#libraries');
-    $(`<h4 id='library-${library.id}-summary'>${library.id} : ${library.name}<span class='fas fa-redo text-muted float-right refresh-library' data-library='${JSON.stringify(library)}'></span></h4>`)
+    $(`<h4 id='library-${library.id}-summary'>${library.id} : ${library.name}<span class='fas fa-redo text-muted float-right refresh-library' onclick='void(0)' data-library='${JSON.stringify(library)}'></span></h4>`)
       .appendTo(`#library-${library.id}`);
     $(`<div id='library-${library.id}-progress' class='progress mb-3'></div>`)
       .appendTo(`#library-${library.id}`);
@@ -15,7 +20,7 @@ $(document).ready(function() {
   }
 
   function addLibraryDetail(library, status) {
-    $(`<span class='badge badge-pill badge-${statuses[status.status].class} ml-2 library-${library.id}-status toggle-sections' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}'>${status.count.toLocaleString()}</span>`)
+    $(`<span class='badge badge-pill badge-${statuses[status.status].class} ml-2 library-${library.id}-status'>${status.count.toLocaleString()}<span class='fa fa-chevron-down text-primary ml-1 toggle-sections' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}'></span></span>`)
       .appendTo(`#library-${library.id}-summary`);
     $(`<div class='progress-bar progress-bar-striped bg-${statuses[status.status].class} library-${library.id}-status' style='width:${status.count*100/library.count}%'></div>`)
       .appendTo(`#library-${library.id}-progress`);
@@ -29,7 +34,7 @@ $(document).ready(function() {
   function addLibrarySection(library, status, section) {
     $(`<div id='library-${library.id}-${status.status}-section-${section.id}' class='library-status-section'></div>`)
       .appendTo(`#library-${library.id}-${status.status}-sections`);
-    $(`<div class='card-header'><span class='close toggle-section-details' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}' data-section='${JSON.stringify(section)}'>&plus;</span><span>${section.root_path}<span class='badge badge-pill badge-dark ml-2'>${section.count.toLocaleString()}</span></span></div>`)
+    $(`<div class='card-header'><span>${section.root_path}<span class='badge badge-pill badge-dark ml-2'>${section.count.toLocaleString()}<span class='fa fa-chevron-down text-muted ml-1 toggle-section-details' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}' data-section='${JSON.stringify(section)}'></span></span></span></div>`)
       .appendTo(`#library-${library.id}-${status.status}-section-${section.id}`);
   }
 
@@ -51,6 +56,9 @@ $(document).ready(function() {
   $.get('query.php', {"function": "getStatuses"})
     .done(function(data) {
       statuses = $.parseJSON(data);
+      $.each(statuses, function(statusID, status) {
+        addStatus(status);
+      });
     });
 
   $('#libraries-loading').addClass('fa-spin');
@@ -86,8 +94,10 @@ $(document).ready(function() {
             });
           });
       }
+      $(this).removeClass('fa-chevron-down').addClass('fa-chevron-up');
     } else if ($(`#library-${library.id}-${status.status}-sections`).is(':visible')) {
       $(`#library-${library.id}-${status.status}-sections`).hide();
+      $(this).removeClass('fa-chevron-up').addClass('fa-chevron-down');
     }
   });
 
@@ -108,13 +118,13 @@ $(document).ready(function() {
             $(this).removeClass('fa-spin');
           });
         });
-      $(this).html('&minus;');
+      $(this).removeClass('fa-chevron-down').addClass('fa-chevron-up');
     } else if ($(`#library-${library.id}-${status.status}-section-${section.id}-details`).is(':hidden')) {
       $(`#library-${library.id}-${status.status}-section-${section.id}-details`).show();
-      $(this).html('&minus;');
+      $(this).removeClass('fa-chevron-down').addClass('fa-chevron-up');
     } else if ($(`#library-${library.id}-${status.status}-section-${section.id}-details`).is(':visible')) {
       $(`#library-${library.id}-${status.status}-section-${section.id}-details`).hide();
-      $(this).html('&plus;');
+      $(this).removeClass('fa-chevron-up').addClass('fa-chevron-down');
     }
   });
 

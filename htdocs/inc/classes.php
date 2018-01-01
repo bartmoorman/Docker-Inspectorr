@@ -194,7 +194,7 @@ EOQ;
     return $data;
   }
 
-  public function getLibrarySectionDetails($library, $section, $status) {
+  public function getLibrarySectionDetails($library, $status, $section) {
     $librarySectionDetails = $this->fetchLibrarySectionDetails($library, $section, $status);
 
     while ($librarySectionDetail = $librarySectionDetails->fetchArray(SQLITE3_ASSOC)) {

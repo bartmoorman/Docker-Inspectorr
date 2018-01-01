@@ -1,8 +1,3 @@
-<?php
-require_once('inc/classes.php');
-
-$obj = new PlexIndexStatus('/data/com.plexapp.plugins.library.db');
-?>
 <!DOCTYPE html>
 <html lang='en'>
   <head>
@@ -21,12 +16,7 @@ $obj = new PlexIndexStatus('/data/com.plexapp.plugins.library.db');
         </div>
         <div id='libraries' class='card-body'>
         </div>
-        <div class='card-footer'>
-<?php
-foreach ($obj->statuses as $status) {
-  echo "          <span class='badge badge-{$status['class']}' style='cursor:help' title='{$status['hint']}'>{$status['text']}</span>" . PHP_EOL;
-}
-?>
+        <div id='statuses' class='card-footer'>
         </div>
       </div>
     </div>
