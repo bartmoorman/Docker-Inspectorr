@@ -1,7 +1,7 @@
 <?php
-require_once('inc/classes.php');
+require_once('inc/complet.class.php');
 
-$obj = new PlexIndexStatus('/data/com.plexapp.plugins.library.db');
+$obj = new Complet('/data/com.plexapp.plugins.library.db');
 
 switch ($_REQUEST['function']) {
   case 'getStatuses':

@@ -1,5 +1,5 @@
 <?php
-class PlexIndexStatus {
+class Complet {
   public $statuses = array(
     'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete'),
     'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started'),
@@ -137,7 +137,7 @@ EOQ;
         break;
       case 2:
         $query = <<<EOQ
-SELECT '{$librarySectionType['section_type']}' AS `type`, `show`.`title` AS `show_title`, SUBSTR('00'||`season`.`index`,-2) AS `season`, SUBSTR('00'||`episode`.`index`,-2) AS `episode`, `episode`.`title` AS `episode_title`
+SELECT '{$librarySectionType['section_type']}' AS `type`, `show`.`title` AS `show_title`, `season`.`index` AS `season`, `episode`.`index` AS `episode`, `episode`.`title` AS `episode_title`
 FROM `metadata_items` AS `show`
 JOIN `metadata_items` AS `season` ON `season`.`parent_id` = `show`.`id`
 JOIN `metadata_items` AS `episode` ON `episode`.`parent_id` = `season`.`id`
