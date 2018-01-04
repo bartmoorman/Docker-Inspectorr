@@ -156,7 +156,7 @@ EOQ;
     return $this->runQuery($query);
   }
 
-  public function getLibraryDetails($library) {
+  private function getLibraryDetails($library) {
     foreach (array_keys($this->statuses) as $status) {
       $libraryDetail = $this->fetchLibraryDetails($library, $status)->fetchArray(SQLITE3_ASSOC);
 

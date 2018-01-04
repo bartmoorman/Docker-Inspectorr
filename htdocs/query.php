@@ -10,9 +10,6 @@ switch ($_REQUEST['function']) {
   case 'getLibraries':
     $data = $obj->{$_REQUEST['function']}();
     break;
-  case 'getLibraryDetails':
-    $data = $obj->{$_REQUEST['function']}($_REQUEST['library']);
-    break;
   case 'getLibrarySections':
     $data = $obj->{$_REQUEST['function']}($_REQUEST['library'], $_REQUEST['status']);
     break;
