@@ -3,8 +3,8 @@ class Complet {
   public $statuses = array(
     'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete'),
     'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started'),
-    'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed (partially corrupt media)'),
-    'unknown' => array('text' => 'Unknown', 'class' => 'danger', 'hint' => 'Indexing not possible (fully corrupt media)')
+    'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed - possible corrupt media'),
+    'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being read)')
   );
 
   private $queryCount;
@@ -38,7 +38,7 @@ AND `media_parts`.`extra_data` LIKE '%failureBIF%'
 AND `media_parts`.`extra_data` NOT LIKE ''
 EOQ;
         break;
-      case 'unknown':
+      case 'corrupt':
         $filters = <<<EOQ
 AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
 AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
