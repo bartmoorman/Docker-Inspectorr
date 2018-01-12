@@ -1,5 +1,19 @@
 #!/bin/bash
-chown www-data: /data
+PMS_APPLICATION_SUPPORT_DIR="${PMS_APPLICATION_SUPPORT_DIR:-/data/Library/Applicaton Support}"
+PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
+
+plexGid=$(stat -c '%g' "${PMS_APPLICATION_SUPPORT_DIR}/${PMS_DATABASE_DIR}")
+if [ ! getent group ${plexGid} ]; then
+    groupadd -g ${plexGid} plexindexstatus
+fi
+
+plexUid=$(stat -c '%u' "${PMS_APPLICATION_SUPPORT_DIR}/${PMS_DATABASE_DIR}")
+if [ ! getent passwd $plexUid} ]; then
+    useradd -u ${plexUid} -g ${plexGid} -d /data -s /bin/false plexindexstatus
+fi
+
+usermod -a -G ${plexGid} www-data
+chmod 664 "${PMS_APPLICATION_SUPPORT_DIR}/${PMS_DATABASE_DIR}/com.plexapp.plugins.library.db-shm"
 
 if [ ! -d /config/httpd/ssl ]; then
     mkdir --parents /config/httpd/ssl
