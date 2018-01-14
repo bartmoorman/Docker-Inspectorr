@@ -1,7 +1,7 @@
 $(document).ready(function() {
-  $.get('query.php', {"function": "getStatuses"})
+  $.getJSON('query.php', {"function": "getStatuses"})
     .done(function(data) {
-      statuses = $.parseJSON(data);
+      statuses = data.data;
       $.each(statuses, function(statusID, status) {
         Complet.addStatus(status);
       });
@@ -10,7 +10,10 @@ $(document).ready(function() {
   Complet.syncStartStatus('#libraries-loading');
   $.getJSON('query.php', {"function": "getLibraries"})
     .done(function(libraries) {
-      $.each(libraries, function(libraryID, library) {
+      $.each(libraries.messages, function(messageID, message) {
+        Complet.addMessage(messageID, message);
+      });
+      $.each(libraries.data, function(libraryID, library) {
         Complet.addLibrary(library);
         $.each(library.details, function(libraryDetailID, libraryDetail) {
           Complet.addLibraryDetail(library, libraryDetail);
@@ -33,14 +36,20 @@ $(document).ready(function() {
         Complet.syncStartStatus('#libraries-loading');
         $.getJSON('query.php', {"function": "getLibrarySections", "library": library.id, "status": status.status})
           .done(function(librarySections) {
-            if (librarySections.length == 1) {
-              $.each(librarySections, function(librarySectionID, librarySection) {
+            $.each(librarySections.messages, function(messageID, message) {
+              Complet.addMessage(messageID, message);
+            });
+            if (librarySections.data.length == 1) {
+              $.each(librarySections.data, function(librarySectionID, librarySection) {
                 Complet.addLibrarySection(library, status, librarySection);
                 Complet.addLibrarySectionDetails(library, status, librarySection);
                 Complet.sectionOpenStatus($(`#library-${library.id}-status-${status.status}-section-${librarySection.id}-summary > span.badge > span.fa`));
                 $.getJSON('query.php', {"function": "getLibrarySectionDetails", "library": library.id, "status": status.status, "section": librarySection.id})
                   .done(function(librarySectionDetails) {
-                    $.each(librarySectionDetails, function(librarySectionDetailID, librarySectionDetail) {
+                    $.each(librarySectionDetails.messages, function(messageID, message) {
+                      Complet.addMessage(messageID, message);
+                    });
+                    $.each(librarySectionDetails.data, function(librarySectionDetailID, librarySectionDetail) {
                       Complet.addLibrarySectionDetail(library, status, librarySection, librarySectionDetail);
                     });
                   })
@@ -50,7 +59,7 @@ $(document).ready(function() {
                   });
               });
             } else {
-              $.each(librarySections, function(librarySectionID, librarySection) {
+              $.each(librarySections.data, function(librarySectionID, librarySection) {
                 Complet.addLibrarySection(library, status, librarySection);
               });
             }
@@ -77,7 +86,10 @@ $(document).ready(function() {
       Complet.syncStartStatus('#libraries-loading');
       $.getJSON('query.php', {"function": "getLibrarySectionDetails", "library": library.id, "status": status.status, "section": section.id})
         .done(function(librarySectionDetails) {
-          $.each(librarySectionDetails, function(librarySectionDetailID, librarySectionDetail) {
+          $.each(librarySectionDetails.messages, function(messageID, message) {
+            Complet.addMessage(messageID, message);
+          });
+          $.each(librarySectionDetails.data, function(librarySectionDetailID, librarySectionDetail) {
             Complet.addLibrarySectionDetail(library, status, section, librarySectionDetail);
           });
           Complet.syncStopStatus('#libraries-loading');
@@ -116,8 +128,12 @@ $(document).ready(function() {
     Complet.syncStartStatus('#libraries-loading');
     $.getJSON('query.php', {"function": "getLibraries"})
       .done(function(libraries) {
+        Complet.removeAllMessages();
         Complet.removeAllLibraries();
-        $.each(libraries, function(libraryID, library) {
+        $.each(libraries.messages, function(messageID, message) {
+          Complet.addMessage(messageID, message);
+        });
+        $.each(libraries.data, function(libraryID, library) {
           Complet.addLibrary(library);
           $.each(library.details, function(libraryDetailID, libraryDetail) {
             Complet.addLibraryDetail(library, libraryDetail);
@@ -126,15 +142,20 @@ $(document).ready(function() {
               Complet.sectionOpenStatus(`#library-${library.id}-summary > h4 > span.badge-${statuses[libraryDetail.status].class} > span.fa`);
               $.getJSON('query.php', {"function": "getLibrarySections", "library": library.id, "status": libraryDetail.status})
                 .done(function(librarySections) {
-                  $.each(librarySections, function(librarySectionID, librarySection) {
+                  $.each(librarySections.messages, function(messageID, message) {
+                    Complet.addMessage(messageID, message);
+                  });
+                  $.each(librarySections.data, function(librarySectionID, librarySection) {
                     Complet.addLibrarySection(library, libraryDetail, librarySection);
                     if (visibleStatuses[library.id][libraryDetail.status].includes(librarySection.id)) {
-
                       Complet.addLibrarySectionDetails(library, libraryDetail, librarySection);
                       Complet.sectionOpenStatus(`#library-${library.id}-status-${libraryDetail.status}-section-${librarySection.id}-summary > span.badge > span.fa`);
                       $.getJSON('query.php', {"function": "getLibrarySectionDetails", "library": library.id, "status": libraryDetail.status, "section": librarySection.id})
                         .done(function(librarySectionDetails) {
-                          $.each(librarySectionDetails, function(librarySectionDetailID, librarySectionDetail) {
+                          $.each(librarySectionDetails.messages, function(messageID, message) {
+                            Complet.addMessage(messageID, message);
+                          });
+                          $.each(librarySectionDetails.data, function(librarySectionDetailID, librarySectionDetail) {
                             Complet.addLibrarySectionDetail(library, libraryDetail, librarySection, librarySectionDetail);
                           });
                         })

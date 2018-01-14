@@ -1,5 +1,6 @@
 <?php
 class Complet {
+  public $messages = array();
   public $statuses = array(
     'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete'),
     'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started'),
@@ -7,12 +8,33 @@ class Complet {
     'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being read)')
   );
 
-  private $queryCount;
-  private $queryTime;
+  private $dbConnected = false;
+  private $queryCount = 0;
+  private $queryTime = 0;
 
-  public function __construct($dbFile) {
+  public function __construct() {
+    $pmsDatabaseFile = getenv('PMS_DATABASE_FILE');
+
+    if (file_exists("/data/{$pmsDatabaseFile}")) {
+      if (!file_exists("/data/{$pmsDatabaseFile}-wal")) {
+        $this->messages['warning'][] = "/data/{$pmsDatabaseFile}-wal doesn't exist. This will likely cause delayed updates.";
+      }
+
+      $dbFile = "/data/{$pmsDatabaseFile}";
+    } elseif (file_exists("/tmp/{$pmsDatabaseFile}")) {
+      if (!file_exists("/tmp/{$pmsDatabaseFile}-wal")) {
+        $this->messages['warning'][] = "/tmp/{$pmsDatabaseFile}-wal doesn't exist. This will likely cause delayed updates.";
+      }
+
+      $dbFile = "/tmp/{$pmsDatabaseFile}";
+    } else {
+      $this->messages['danger'][] = "Unable to locate {$pmsDatabaseFile} in /data or /tmp. This is fatal.";
+      return;
+    }
+
     $this->db = new SQLite3($dbFile, SQLITE3_OPEN_READONLY);
     $this->db->busyTimeout(500);
+    $this->dbConnected = true;
   }
 
   private function statusFilters($status) {
@@ -46,13 +68,15 @@ AND `media_parts`.`extra_data` LIKE ''
 EOQ;
         break;
       default:
-        return false;
+        return;
     }
 
     return $filters;
   }
 
   private function runQuery($query) {
+    if (!$this->dbConnected) return;
+
     $start = microtime(true);
 
     $result = $this->db->query($query);
@@ -66,8 +90,8 @@ EOQ;
   }
 
   private function fetchLibraries() {
-    $excludeIDs = implode(', ', explode(',', getenv('EXCLUDE_LIBRARY_IDS')));
-    $excludeNames = implode("', '", explode(',', getenv('EXCLUDE_LIBRARY_NAMES')));
+    $pmsExcludeLibraryIDs = implode(', ', explode(',', getenv('PMS_EXCLUDE_LIBRARY_IDS')));
+    $pmsExcludeLibraryNames = implode("', '", explode(',', getenv('PMS_EXCLUDE_LIBRARY_NAMES')));
 
     $query = <<<EOQ
 SELECT `library_sections`.`id`, `library_sections`.`name`, COUNT(*) AS `count`
@@ -75,8 +99,8 @@ FROM `library_sections`
 JOIN `metadata_items` ON `metadata_items`.`library_section_id` = `library_sections`.`id`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
-WHERE `library_sections`.`id` NOT IN ({$excludeIDs})
-AND `library_sections`.`name` NOT IN ('{$excludeNames}')
+WHERE `library_sections`.`id` NOT IN ({$pmsExcludeLibraryIDs})
+AND `library_sections`.`name` NOT IN ('{$pmsExcludeLibraryNames}')
 AND `library_sections`.`section_type` IN (1,2)
 GROUP BY `library_sections`.`id`
 ORDER BY `library_sections`.`name`
@@ -120,7 +144,13 @@ FROM `library_sections`
 WHERE `library_sections`.`id` = {$library}
 EOQ;
 
-    $librarySectionType = $this->runQuery($query)->fetchArray(SQLITE3_ASSOC);
+    $librarySectionTypes = $this->runQuery($query);
+
+    if ($librarySectionTypes) {
+      $librarySectionType = $librarySectionTypes->fetchArray(SQLITE3_ASSOC);
+    } else {
+      return;
+    }
 
     switch ($librarySectionType['section_type']) {
       case 1:
@@ -150,7 +180,7 @@ ORDER BY `show`.`title_sort`, `season`.`index`, `episode`.`index`
 EOQ;
         break;
       default:
-        return false;
+        return;
     }
 
     return $this->runQuery($query);
@@ -158,7 +188,13 @@ EOQ;
 
   private function getLibraryDetails($library) {
     foreach (array_keys($this->statuses) as $status) {
-      $libraryDetail = $this->fetchLibraryDetails($library, $status)->fetchArray(SQLITE3_ASSOC);
+      $libraryDetails = $this->fetchLibraryDetails($library, $status);
+
+      if ($libraryDetails) {
+        $libraryDetail = $libraryDetails->fetchArray(SQLITE3_ASSOC);
+      } else {
+        return;
+      }
 
       if ($libraryDetail['count']) {
         $data[] = $libraryDetail;
@@ -171,14 +207,18 @@ EOQ;
   public function getLibraries() {
     $libraries = $this->fetchLibraries();
 
-    while ($library = $libraries->fetchArray(SQLITE3_ASSOC)) {
-      $libraryDetails = $this->getLibraryDetails($library['id']);
+    if ($libraries) {
+      while ($library = $libraries->fetchArray(SQLITE3_ASSOC)) {
+        $libraryDetails = $this->getLibraryDetails($library['id']);
 
-      foreach ($libraryDetails as $libraryDetail) {
-        $library['details'][] = $libraryDetail;
+        foreach ($libraryDetails as $libraryDetail) {
+          $library['details'][] = $libraryDetail;
+        }
+
+        $data[] = $library;
       }
-
-      $data[] = $library;
+    } else {
+      return;
     }
 
     return $data;
@@ -187,8 +227,12 @@ EOQ;
   public function getLibrarySections($library, $section) {
     $librarySections = $this->fetchLibrarySections($library, $section);
 
-    while ($librarySection = $librarySections->fetchArray(SQLITE3_ASSOC)) {
-      $data[] = $librarySection;
+    if ($librarySections) {
+      while ($librarySection = $librarySections->fetchArray(SQLITE3_ASSOC)) {
+        $data[] = $librarySection;
+      }
+    } else {
+      return;
     }
 
     return $data;
@@ -197,8 +241,12 @@ EOQ;
   public function getLibrarySectionDetails($library, $status, $section) {
     $librarySectionDetails = $this->fetchLibrarySectionDetails($library, $section, $status);
 
-    while ($librarySectionDetail = $librarySectionDetails->fetchArray(SQLITE3_ASSOC)) {
-      $data[] = $librarySectionDetail;
+    if ($librarySectionDetails) {
+      while ($librarySectionDetail = $librarySectionDetails->fetchArray(SQLITE3_ASSOC)) {
+        $data[] = $librarySectionDetail;
+      }
+    } else {
+      return;
     }
 
     return $data;

@@ -1,4 +1,20 @@
 class Complet {
+  static addMessage(severity, message) {
+    if (severity == 'warning' || severity == 'success' || severity == 'info') {
+      $(`<div class='alert alert-dismissable alert-${severity}'><button type='button' class='close' data-dismiss='alert'>&times;</button><p class='mb-0'>${message}</p></div>`)
+        .appendTo('#messages');
+    } else {
+      $(`<div class='alert alert-${severity}'><p class='mb-0'>${message}</p></div>`)
+        .appendTo('#messages');
+    }
+  }
+
+  static removeAllMessages() {
+    $('#messages > div').each(function() {
+      $(this).remove();
+    });
+  }
+
   static addStatus(status) {
     $(`<span class='badge badge-${status.class} mr-2' title='${status.hint}'>${status.text}</span>`)
       .appendTo('#statuses');

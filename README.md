@@ -4,11 +4,12 @@ docker run \
 --rm \
 --detach \
 --init \
+--cap-add SYS_ADMIN \
+--security-opt apparmor=unconfined \
 --name plexindexstatus \
 --hostname plexindexstatus \
 --volume plexindexstatus-config:/config \
---volume /var/lib/plexmediaserver/Library/Application\ Support/Plex\ Media\ Server/Plug-in\ Support/Databases/com.plexapp.plugins.library.db:/data/com.plexapp.plugins.library.db:ro \
---volume /var/lib/plexmediaserver/Library/Application\ Support/Plex\ Media\ Server/Plug-in\ Support/Databases/com.plexapp.plugins.library.db-wal:/data/com.plexapp.plugins.library.db-wal:ro \
+--volume plex-config:/data:ro \
 --publish 7539:7539 \
 --env "HTTPD_SERVERNAME=**sub.do.main**" \
 bmoorman/plexindexstatus

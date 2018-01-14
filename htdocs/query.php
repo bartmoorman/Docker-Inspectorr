@@ -1,7 +1,7 @@
 <?php
 require_once('inc/complet.class.php');
 
-$obj = new Complet('/data/com.plexapp.plugins.library.db');
+$obj = new Complet();
 
 switch ($_REQUEST['function']) {
   case 'getStatuses':
@@ -20,5 +20,5 @@ switch ($_REQUEST['function']) {
     $data = array();
 }
 
-echo json_encode($data);
+echo json_encode(array('messages' => $obj->messages, 'data' => $data));
 ?>
