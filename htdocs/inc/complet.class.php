@@ -15,20 +15,14 @@ class Complet {
   public function __construct() {
     $pmsDatabaseFile = getenv('PMS_DATABASE_FILE');
 
-    if (file_exists("/data/{$pmsDatabaseFile}")) {
-      if (!file_exists("/data/{$pmsDatabaseFile}-wal")) {
-        $this->messages['warning'][] = "/data/{$pmsDatabaseFile}-wal doesn't exist. This will likely cause delayed updates.";
-      }
-
-      $dbFile = "/data/{$pmsDatabaseFile}";
-    } elseif (file_exists("/tmp/{$pmsDatabaseFile}")) {
+    if (file_exists("/tmp/{$pmsDatabaseFile}")) {
       if (!file_exists("/tmp/{$pmsDatabaseFile}-wal")) {
         $this->messages['warning'][] = "/tmp/{$pmsDatabaseFile}-wal doesn't exist. This will likely cause delayed updates.";
       }
 
       $dbFile = "/tmp/{$pmsDatabaseFile}";
     } else {
-      $this->messages['danger'][] = "Unable to locate {$pmsDatabaseFile} in /data or /tmp. This is fatal.";
+      $this->messages['danger'][] = "Unable to locate {$pmsDatabaseFile}. This is fatal.";
       return;
     }
 

@@ -23,7 +23,7 @@ class Complet {
   static addLibrary(library) {
     $(`<div id='library-${library.id}'></div>`)
       .appendTo('#libraries');
-    $(`<div id='library-${library.id}-summary'><h4>${library.id} : ${library.name}</h4></div>`)
+    $(`<div id='library-${library.id}-summary'><h4>${library.name}</h4></div>`)
       .appendTo(`#library-${library.id}`);
     $(`<div id='library-${library.id}-progress' class='progress mb-3'></div>`)
       .appendTo(`#library-${library.id}`);

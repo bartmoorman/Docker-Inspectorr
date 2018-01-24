@@ -3,9 +3,7 @@ export PMS_APPLICATIOM_SUPPORT_DIR="${PMS_APPLICATIOM_SUPPORT_DIR:-/data/Library
 export PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
 export PMS_DATABASE_FILE="${PMS_DATABASE_FILE:-com.plexapp.plugins.library.db}"
 
-if [ -f "/data/${PMS_DATABASE_FILE}" ]; then
-    chown www-data: /data
-elif [ -f "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}" ]; then
+if [ -f "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}" ]; then
     touch "/tmp/${PMS_DATABASE_FILE}"
     mount --bind "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}" "/tmp/${PMS_DATABASE_FILE}"
 
