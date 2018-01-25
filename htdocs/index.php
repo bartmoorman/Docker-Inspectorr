@@ -1,3 +1,13 @@
+<?php
+require_once('inc/auth.class.php');
+
+$auth = new Auth();
+
+if ($auth->isConfigured() && !$auth->isValidSession()) {
+  header('Location: /login.php');
+  exit;
+}
+?>
 <!DOCTYPE html>
 <html lang='en'>
   <head>
@@ -19,6 +29,13 @@
         <div id='libraries' class='card-body'>
         </div>
         <div id='statuses' class='card-footer'>
+<?php
+if (!$auth->isConfigured()) {
+  echo "          <span class='float-right'><a class='text-white' href='/auth.php'><span class='fa fa-lock-open' title='Configure Authentication'></span></a></span>" . PHP_EOL;
+} else {
+  echo "          <span class='float-right'><a class='text-white' href='/logout.php'><span class='fa fa-sign-out-alt' title='Log out'></span></a></span>" . PHP_EOL;
+}
+?>
         </div>
       </div>
     </div>

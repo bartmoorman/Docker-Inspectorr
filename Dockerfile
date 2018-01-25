@@ -4,9 +4,13 @@ ENV HTTPD_SERVERNAME="localhost"
 
 ARG DEBIAN_FRONTEND="noninteractive"
 
-RUN apt-get update \
+RUN echo 'deb http://ppa.launchpad.net/certbot/certbot/ubuntu xenial main' > /etc/apt/sources.list.d/certbot.list \
+ && echo 'deb-src http://ppa.launchpad.net/certbot/certbot/ubuntu xenial main' >> /etc/apt/sources.list.d/certbot.list \
+ && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 75BCA694 \
+ && apt-get update \
  && apt-get install --yes --no-install-recommends \
     apache2 \
+    certbot \
     curl \
     libapache2-mod-php \
     php-sqlite3 \
@@ -19,8 +23,8 @@ RUN apt-get update \
  && apt-get clean \
  && rm --recursive --force /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY htdocs/ /var/www/html/
 COPY apache2/ /etc/apache2/
+COPY htdocs/ /var/www/html/
 
 VOLUME /config
 

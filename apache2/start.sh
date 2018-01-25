@@ -1,4 +1,6 @@
 #!/bin/bash
+chown www-data: /config
+
 export PMS_APPLICATIOM_SUPPORT_DIR="${PMS_APPLICATIOM_SUPPORT_DIR:-/data/Library/Application Support}"
 export PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
 export PMS_DATABASE_FILE="${PMS_DATABASE_FILE:-com.plexapp.plugins.library.db}"
