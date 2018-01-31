@@ -5,10 +5,10 @@ $auth = new Auth();
 
 if ($auth->isConfigured()) {
   $auth->deauthenticateSession();
-  header('Location: /login.php');
+  header('Location: login.php');
   exit;
 } else {
-  header('Location: /');
+  header('Location: ' . dirname($_SERVER['PHP_SELF']));
   exit;
 }
 ?>

@@ -4,12 +4,12 @@ require_once('inc/auth.class.php');
 $auth = new Auth();
 
 if ($auth->isConfigured()) {
-  header('Location: /login.php');
+  header('Location: login.php');
   exit;
 } elseif ($auth->isConfigurable() && !empty($_POST['username']) && !empty($_POST['password']) && !empty($_POST['verify_password'])) {
   if ($auth->createUser($_POST['username'], $_POST['password'], $_POST['verify_password'])) {
     $auth->authenticateSession($_POST['username']);
-    header('Location: /');
+    header('Location: ' . dirname($_SERVER['PHP_SELF']));
     exit;
   }
 }

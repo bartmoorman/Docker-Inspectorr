@@ -5,15 +5,15 @@ $auth = new Auth();
 
 if ($auth->isConfigured()) {
   if ($auth->isValidSession()) {
-    header('Location: /');
+    header('Location: ' . dirname($_SERVER['PHP_SELF']));
     exit;
   } elseif (!empty($_POST['username']) && !empty($_POST['password']) && $auth->isValidCredentials($_POST['username'], $_POST['password'])) {
     $auth->authenticateSession($_POST['username']);
-    header('Location: /');
+    header('Location: ' . dirname($_SERVER['PHP_SELF']));
     exit;
   }
 } else {
-  header('Location: /auth.php');
+  header('Location: auth.php');
   exit;
 }
 ?>

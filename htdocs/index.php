@@ -4,7 +4,7 @@ require_once('inc/auth.class.php');
 $auth = new Auth();
 
 if ($auth->isConfigured() && !$auth->isValidSession()) {
-  header('Location: /login.php');
+  header('Location: login.php');
   exit;
 }
 ?>
