@@ -2,10 +2,84 @@
 class Complet {
   public $messages = array();
   public $statuses = array(
-    'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete'),
-    'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started'),
-    'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed - possible corrupt media'),
-    'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being read)')
+    'indexStatus' => array(
+      'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete',
+        'filters' => array(
+          "AND `media_parts`.`extra_data` LIKE '%indexes%'",
+          "AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
+          "AND `media_parts`.`extra_data` NOT LIKE ''"
+        )
+      ),
+      'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started',
+        'filters' => array(
+          "AND `media_parts`.`extra_data` NOT LIKE '%indexes%'",
+          "AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
+          "AND `media_parts`.`extra_data` NOT LIKE ''"
+        )
+      ),
+      'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed - possible corrupt media',
+        'filters' => array(
+          "AND `media_parts`.`extra_data` NOT LIKE '%indexes%'",
+          "AND `media_parts`.`extra_data` LIKE '%failureBIF%'",
+          "AND `media_parts`.`extra_data` NOT LIKE ''"
+        )
+      ),
+      'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being read)',
+        'filters' => array(
+          "AND `media_parts`.`extra_data` NOT LIKE '%indexes%'",
+          "AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
+          "AND `media_parts`.`extra_data` LIKE ''"
+        )
+      )
+    ),
+    'audioQuality' => array(
+      'uhd' => array('text' => 'UHD', 'class' => 'success', 'hint' => '7.1 or higher',
+        'filters' => array(
+          "AND `media_items`.`audio_channels` >= 8"
+        )
+      ),
+      'hd' => array('text' => 'HD', 'class' => 'info', 'hint' => '5.1 or higher, below 7.1',
+        'filters' => array(
+          "AND `media_items`.`audio_channels` < 8",
+          "AND `media_items`.`audio_channels` >= 6"
+        )
+      ),
+      'sd' => array('text' => 'SD', 'class' => 'warning', 'hint' => 'Stereo or higher, below 5.1',
+        'filters' => array(
+          "AND `media_items`.`audio_channels` < 6",
+          "AND `media_items`.`audio_channels` >= 2"
+        )
+      ),
+      'other' => array('text' => 'Other', 'class' => 'danger', 'hint' => 'below Stereo',
+        'filters' => array(
+          "AND `media_items`.`audio_channels` < 2"
+        )
+      )
+    ),
+    'videoQuality' => array(
+      'uhd' => array('text' => 'UHD', 'class' => 'success', 'hint' => '4k or higher',
+        'filters' => array(
+          "AND `media_items`.`width` >= 2160"
+        )
+      ),
+      'hd' => array('text' => 'HD', 'class' => 'info', 'hint' => '1080p or higher, below 4k',
+        'filters' => array(
+          "AND `media_items`.`width` < 2160",
+          "AND `media_items`.`width` >= 1920"
+        )
+      ),
+      'sd' => array('text' => 'SD', 'class' => 'warning', 'hint' => '720p or higher, below 1080p',
+        'filters' => array(
+          "AND `media_items`.`width` < 1920",
+          "AND `media_items`.`width` >= 1280"
+        )
+      ),
+      'other' => array('text' => 'Other', 'class' => 'danger', 'hint' => 'below 720p',
+        'filters' => array(
+          "AND `media_items`.`width` < 1280"
+        )
+      )
+    )
   );
 
   private $dbConnected = false;
@@ -31,39 +105,8 @@ class Complet {
     $this->dbConnected = true;
   }
 
-  private function statusFilters($status) {
-    switch ($status) {
-      case 'complete':
-        $filters = <<<EOF
-AND `media_parts`.`extra_data` LIKE '%indexes%'
-AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
-AND `media_parts`.`extra_data` NOT LIKE ''
-EOF;
-        break;
-      case 'pending':
-        $filters = <<<EOQ
-AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
-AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
-AND `media_parts`.`extra_data` NOT LIKE ''
-EOQ;
-        break;
-      case 'failed':
-        $filters = <<<EOQ
-AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
-AND `media_parts`.`extra_data` LIKE '%failureBIF%'
-AND `media_parts`.`extra_data` NOT LIKE ''
-EOQ;
-        break;
-      case 'corrupt':
-        $filters = <<<EOQ
-AND `media_parts`.`extra_data` NOT LIKE '%indexes%'
-AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'
-AND `media_parts`.`extra_data` LIKE ''
-EOQ;
-        break;
-      default:
-        return;
-    }
+  private function buildStatusFilters($tab, $status) {
+    $filters = implode(PHP_EOL, $this->statuses[$tab][$status]['filters']);
 
     return $filters;
   }
@@ -103,20 +146,20 @@ EOQ;
     return $this->runQuery($query);
   }
 
-  private function fetchLibraryDetails($library, $status) {
+  private function fetchLibraryDetails($tab, $library, $status) {
     $query = <<<EOQ
 SELECT '{$status}' AS `status`, COUNT(*) AS `count`
 FROM `metadata_items`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
 WHERE `metadata_items`.`library_section_id` = {$library}
-{$this->statusFilters($status)}
+{$this->buildStatusFilters($tab, $status)}
 EOQ;
 
     return $this->runQuery($query);
   }
 
-  private function fetchLibrarySections($library, $status) {
+  private function fetchLibrarySections($tab, $library, $status) {
    $query = <<<EOQ
 SELECT `section_locations`.`id`, `section_locations`.`root_path`, COUNT(*) AS `count`
 FROM `metadata_items`
@@ -124,14 +167,14 @@ JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
 JOIN `section_locations` ON `section_locations`.`id` = `media_items`.`section_location_id`
 WHERE `metadata_items`.`library_section_id` = {$library}
-{$this->statusFilters($status)}
+{$this->buildStatusFilters($tab, $status)}
 GROUP BY `section_locations`.`id`
 EOQ;
 
     return $this->runQuery($query);
   }
 
-  private function fetchLibrarySectionDetails($library, $section, $status) {
+  private function fetchLibrarySectionDetails($tab, $library, $section, $status) {
     $query = <<<EOQ
 SELECT `library_sections`.`section_type`
 FROM `library_sections`
@@ -155,7 +198,7 @@ JOIN `media_items` ON `media_items`.`metadata_item_id` = `movie`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
 WHERE `movie`.`library_section_id` = {$library}
 AND `media_items`.`section_location_id` = {$section}
-{$this->statusFilters($status)}
+{$this->buildStatusFilters($tab, $status)}
 ORDER BY `movie`.`title_sort`
 EOQ;
         break;
@@ -169,7 +212,7 @@ JOIN `media_items` ON `media_items`.`metadata_item_id` = `episode`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
 WHERE `show`.`library_section_id` = {$library}
 AND `media_items`.`section_location_id` = {$section}
-{$this->statusFilters($status)}
+{$this->buildStatusFilters($tab, $status)}
 ORDER BY `show`.`title_sort`, `season`.`index`, `episode`.`index`
 EOQ;
         break;
@@ -180,9 +223,19 @@ EOQ;
     return $this->runQuery($query);
   }
 
-  private function getLibraryDetails($library) {
-    foreach (array_keys($this->statuses) as $status) {
-      $libraryDetails = $this->fetchLibraryDetails($library, $status);
+  public function getStatuses($tab) {
+    $statusKeys = array('text', 'class', 'hint');
+
+    foreach ($this->statuses[$tab] as $status => $details) {
+      $statuses[$status] = array_intersect_key($details, array_flip($statusKeys));
+    }
+
+    return $statuses;
+  }
+
+  private function getLibraryDetails($tab, $library) {
+    foreach (array_keys($this->statuses[$tab]) as $status) {
+      $libraryDetails = $this->fetchLibraryDetails($tab, $library, $status);
 
       if ($libraryDetails) {
         $libraryDetail = $libraryDetails->fetchArray(SQLITE3_ASSOC);
@@ -198,12 +251,12 @@ EOQ;
     return $data;
   }
 
-  public function getLibraries() {
+  public function getLibraries($tab) {
     $libraries = $this->fetchLibraries();
 
     if ($libraries) {
       while ($library = $libraries->fetchArray(SQLITE3_ASSOC)) {
-        $libraryDetails = $this->getLibraryDetails($library['id']);
+        $libraryDetails = $this->getLibraryDetails($tab, $library['id']);
 
         foreach ($libraryDetails as $libraryDetail) {
           $library['details'][] = $libraryDetail;
@@ -218,8 +271,8 @@ EOQ;
     return $data;
   }
 
-  public function getLibrarySections($library, $section) {
-    $librarySections = $this->fetchLibrarySections($library, $section);
+  public function getLibrarySections($tab, $library, $section) {
+    $librarySections = $this->fetchLibrarySections($tab, $library, $section);
 
     if ($librarySections) {
       while ($librarySection = $librarySections->fetchArray(SQLITE3_ASSOC)) {
@@ -232,8 +285,8 @@ EOQ;
     return $data;
   }
 
-  public function getLibrarySectionDetails($library, $status, $section) {
-    $librarySectionDetails = $this->fetchLibrarySectionDetails($library, $section, $status);
+  public function getLibrarySectionDetails($tab, $library, $status, $section) {
+    $librarySectionDetails = $this->fetchLibrarySectionDetails($tab, $library, $section, $status);
 
     if ($librarySectionDetails) {
       while ($librarySectionDetail = $librarySectionDetails->fetchArray(SQLITE3_ASSOC)) {

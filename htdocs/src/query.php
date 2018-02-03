@@ -11,21 +11,22 @@ if ($auth->isConfigured() && !$auth->isValidSession()) {
 
 $complet = new Complet();
 
-switch ($_REQUEST['function']) {
+$function = array_key_exists('function', $_REQUEST) ? $_REQUEST['function'] : null;
+$tab = array_key_exists('tab', $_REQUEST) ? $_REQUEST['tab'] : 'indexStatus';
+
+switch ($function) {
   case 'getStatuses':
-    $data = $complet->statuses;
-    break;
   case 'getLibraries':
-    $data = $complet->{$_REQUEST['function']}();
+    $data = $complet->{$function}($tab);
     break;
   case 'getLibrarySections':
-    $data = $complet->{$_REQUEST['function']}($_REQUEST['library'], $_REQUEST['status']);
+    $data = $complet->{$function}($tab, $_REQUEST['library'], $_REQUEST['status']);
     break;
   case 'getLibrarySectionDetails':
-    $data = $complet->{$_REQUEST['function']}($_REQUEST['library'], $_REQUEST['status'], $_REQUEST['section']);
+    $data = $complet->{$function}($tab, $_REQUEST['library'], $_REQUEST['status'], $_REQUEST['section']);
     break;
   default:
-    $data = array();
+    $data = array('nope');
 }
 
 echo json_encode(array('messages' => $complet->messages, 'data' => $data));

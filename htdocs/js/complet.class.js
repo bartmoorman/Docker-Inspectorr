@@ -100,4 +100,15 @@ class Complet {
   static sectionCloseStatus(selector) {
     $(selector).removeClass('fa-chevron-up').addClass('fa-chevron-down');
   }
+
+  static removeStatuses() {
+    $('#statuses > span.badge').each(function() {
+      $(this).remove();
+    });
+  }
+
+  static activateTab(selector) {
+    $('.custom-tab.active').removeClass('active');
+    $(selector).addClass('active');
+  }
 }

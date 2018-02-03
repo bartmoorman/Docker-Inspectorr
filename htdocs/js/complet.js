@@ -1,14 +1,8 @@
 $(document).ready(function() {
-  $.getJSON('src/query.php', {"function": "getStatuses"})
-    .done(function(data) {
-      statuses = data.data;
-      $.each(statuses, function(statusID, status) {
-        Complet.addStatus(status);
-      });
-    });
+  var tab = 'indexStatus';
 
   Complet.syncStartStatus('#libraries-loading');
-  $.getJSON('src/query.php', {"function": "getLibraries"})
+  $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
     .done(function(libraries) {
       $.each(libraries.messages, function(messageID, message) {
         Complet.addMessage(messageID, message);
@@ -26,6 +20,59 @@ $(document).ready(function() {
       Complet.syncErrorStatus('#libraries-loading');
     });
 
+  Complet.syncStartStatus('#libraries-loading');
+  $.getJSON('src/query.php', {"tab": tab, "function": "getStatuses"})
+    .done(function(data) {
+      statuses = data.data;
+      $.each(statuses, function(statusID, status) {
+        Complet.addStatus(status);
+      });
+      Complet.syncStopStatus('#libraries-loading');
+    })
+    .fail(function(jqxhr, textStatus, errorThrown) {
+      console.log(`getStatuses failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+      Complet.syncErrorStatus('#libraries-loading');
+    });
+
+  $(document).on('click', 'a.custom-tab', function() {
+    tab = $(this).data('tab');
+    Complet.removeAllMessages();
+    Complet.activateTab($(this));
+    Complet.syncStartStatus('#libraries-loading');
+    $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
+      .done(function(libraries) {
+        Complet.removeAllLibraries();
+        $.each(libraries.messages, function(messageID, message) {
+          Complet.addMessage(messageID, message);
+        });
+        $.each(libraries.data, function(libraryID, library) {
+          Complet.addLibrary(library);
+          $.each(library.details, function(libraryDetailID, libraryDetail) {
+            Complet.addLibraryDetail(library, libraryDetail);
+          });
+        });
+        Complet.syncStopStatus('#libraries-loading');
+      })
+      .fail(function(jqxhr, textStatus, errorThrown) {
+        console.log(`getLibraries failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+        Complet.syncErrorStatus('#libraries-loading');
+      });
+    Complet.syncStartStatus('#libraries-loading');
+    $.getJSON('src/query.php', {"tab": tab, "function": "getStatuses"})
+      .done(function(data) {
+        Complet.removeStatuses();
+        statuses = data.data;
+        $.each(statuses, function(statusID, status) {
+          Complet.addStatus(status);
+        });
+        Complet.syncStopStatus('#libraries-loading');
+      })
+      .fail(function(jqxhr, textStatus, errorThrown) {
+        console.log(`getStatuses failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+        Complet.syncErrorStatus('#libraries-loading');
+      });
+  });
+
   $(document).on('click', 'span.toggle-status-sections', function() {
     var library = $(this).data('library');
     var status = $(this).data('status');
@@ -34,7 +81,7 @@ $(document).ready(function() {
       Complet.sectionOpenStatus($(this).children('span.fa'));
       if (!$(`#library-${library.id}-status-${status.status} > div`).not('.card-header').length) {
         Complet.syncStartStatus('#libraries-loading');
-        $.getJSON('src/query.php', {"function": "getLibrarySections", "library": library.id, "status": status.status})
+        $.getJSON('src/query.php', {"tab": tab, "function": "getLibrarySections", "library": library.id, "status": status.status})
           .done(function(librarySections) {
             $.each(librarySections.messages, function(messageID, message) {
               Complet.addMessage(messageID, message);
@@ -44,7 +91,7 @@ $(document).ready(function() {
                 Complet.addLibrarySection(library, status, librarySection);
                 Complet.addLibrarySectionDetails(library, status, librarySection);
                 Complet.sectionOpenStatus($(`#library-${library.id}-status-${status.status}-section-${librarySection.id}-summary > span.badge > span.fa`));
-                $.getJSON('src/query.php', {"function": "getLibrarySectionDetails", "library": library.id, "status": status.status, "section": librarySection.id})
+                $.getJSON('src/query.php', {"tab": tab, "function": "getLibrarySectionDetails", "library": library.id, "status": status.status, "section": librarySection.id})
                   .done(function(librarySectionDetails) {
                     $.each(librarySectionDetails.messages, function(messageID, message) {
                       Complet.addMessage(messageID, message);
@@ -84,7 +131,7 @@ $(document).ready(function() {
       Complet.addLibrarySectionDetails(library, status, section);
       Complet.sectionOpenStatus($(this).children('span.fa'));
       Complet.syncStartStatus('#libraries-loading');
-      $.getJSON('src/query.php', {"function": "getLibrarySectionDetails", "library": library.id, "status": status.status, "section": section.id})
+      $.getJSON('src/query.php', {"tab": tab, "function": "getLibrarySectionDetails", "library": library.id, "status": status.status, "section": section.id})
         .done(function(librarySectionDetails) {
           $.each(librarySectionDetails.messages, function(messageID, message) {
             Complet.addMessage(messageID, message);
@@ -125,10 +172,10 @@ $(document).ready(function() {
         });
       }
     });
+    Complet.removeAllMessages();
     Complet.syncStartStatus('#libraries-loading');
-    $.getJSON('src/query.php', {"function": "getLibraries"})
+    $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
       .done(function(libraries) {
-        Complet.removeAllMessages();
         Complet.removeAllLibraries();
         $.each(libraries.messages, function(messageID, message) {
           Complet.addMessage(messageID, message);
@@ -140,7 +187,7 @@ $(document).ready(function() {
             if (visibleStatuses[library.id][libraryDetail.status]) {
               Complet.sectionOpen(`#library-${library.id}-status-${libraryDetail.status}`);
               Complet.sectionOpenStatus(`#library-${library.id}-summary > h4 > span.badge-${statuses[libraryDetail.status].class} > span.fa`);
-              $.getJSON('src/query.php', {"function": "getLibrarySections", "library": library.id, "status": libraryDetail.status})
+              $.getJSON('src/query.php', {"tab": tab, "function": "getLibrarySections", "library": library.id, "status": libraryDetail.status})
                 .done(function(librarySections) {
                   $.each(librarySections.messages, function(messageID, message) {
                     Complet.addMessage(messageID, message);
@@ -150,7 +197,7 @@ $(document).ready(function() {
                     if (visibleStatuses[library.id][libraryDetail.status].includes(librarySection.id)) {
                       Complet.addLibrarySectionDetails(library, libraryDetail, librarySection);
                       Complet.sectionOpenStatus(`#library-${library.id}-status-${libraryDetail.status}-section-${librarySection.id}-summary > span.badge > span.fa`);
-                      $.getJSON('src/query.php', {"function": "getLibrarySectionDetails", "library": library.id, "status": libraryDetail.status, "section": librarySection.id})
+                      $.getJSON('src/query.php', {"tab": tab, "function": "getLibrarySectionDetails", "library": library.id, "status": libraryDetail.status, "section": librarySection.id})
                         .done(function(librarySectionDetails) {
                           $.each(librarySectionDetails.messages, function(messageID, message) {
                             Complet.addMessage(messageID, message);

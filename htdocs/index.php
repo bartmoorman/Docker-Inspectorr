@@ -11,12 +11,13 @@ if ($auth->isConfigured() && !$auth->isValidSession()) {
 <!DOCTYPE html>
 <html lang='en'>
   <head>
-    <title>Plex Index Status</title>
+    <title>Inspectorr</title>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
     <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css' integrity='sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb' crossorigin='anonymous'>
     <link rel='stylesheet' href='//bootswatch.com/4/darkly/bootstrap.min.css'>
     <link rel='stylesheet' href='//use.fontawesome.com/releases/v5.0.2/css/all.css' integrity='sha384-bJB2Wn8ZuuMwYA12t6nmPqVTqT64ruKTAWqdxs/Oal3vexA7RPAo3FtVU5hIil2E' crossorigin='anonymous'>
+    <link rel='stylesheet' href='css/main.css'>
   </head>
   <body>
     <div class='container'>
@@ -24,7 +25,18 @@ if ($auth->isConfigured() && !$auth->isValidSession()) {
       </div>
       <div class='card border-secondary my-3'>
         <div class='card-header'>
-          <h3 class='mb-0'><span class='fa fa-check mr-2'></span>Plex Index Status<span id='libraries-loading' class='fa fa-sync text-muted float-right refresh-libraries' onclick='void(0)'></span></h3>
+          <ul class='nav nav-tabs card-header-tabs float-left'>
+            <li class='nav-item'>
+              <h4 class='mb-0'><a class='nav-link border-bottom-0 px-3 custom-tab active' onclick='void(0)' data-tab='indexStatus'><span class='fa fa-check'></span><span class='d-none d-md-inline ml-2'>Index Status</span></a></h4>
+            </li>
+            <li class='nav-item'>
+              <h4 class='mb-0'><a class='nav-link border-bottom-0 px-3 custom-tab' onclick='void(0)' data-tab='audioQuality'><span class='fa fa-headphones'></span><span class='d-none d-md-inline ml-2'>Audio Quality</span></a></h4>
+            </li>
+            <li class='nav-item'>
+              <h4 class='mb-0'><a class='nav-link border-bottom-0 px-3 custom-tab' onclick='void(0)' data-tab='videoQuality'><span class='fa fa-video'></span><span class='d-none d-md-inline ml-2'>Video Quality</span></a></h4>
+            </li>
+          </ul>
+          <h2 class='mb-0'><span id='libraries-loading' class='fa fa-sync text-muted float-right refresh-libraries' onclick='void(0)'></span></h2>
         </div>
         <div id='libraries' class='card-body'>
         </div>
