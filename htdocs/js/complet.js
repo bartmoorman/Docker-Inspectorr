@@ -2,31 +2,31 @@ $(document).ready(function() {
   var tab = 'indexStatus';
 
   Complet.syncStartStatus('#libraries-loading');
-  $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
-    .done(function(libraries) {
-      $.each(libraries.messages, function(messageID, message) {
-        Complet.addMessage(messageID, message);
-      });
-      $.each(libraries.data, function(libraryID, library) {
-        Complet.addLibrary(library);
-        $.each(library.details, function(libraryDetailID, libraryDetail) {
-          Complet.addLibraryDetail(library, libraryDetail);
-        });
-      });
-      Complet.syncStopStatus('#libraries-loading');
-    })
-    .fail(function(jqxhr, textStatus, errorThrown) {
-      console.log(`getLibraries failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
-      Complet.syncErrorStatus('#libraries-loading');
-    });
-
-  Complet.syncStartStatus('#libraries-loading');
   $.getJSON('src/query.php', {"tab": tab, "function": "getStatuses"})
     .done(function(data) {
-      statuses = data.data;
-      $.each(statuses, function(statusID, status) {
-        Complet.addStatus(status);
+      $.each(data.messages, function(messageID, message) {
+        Complet.addMessage(messageID, message);
       });
+      statuses = data.data;
+      $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
+        .done(function(libraries) {
+          $.each(libraries.messages, function(messageID, message) {
+            Complet.addMessage(messageID, message);
+          });
+          $.each(libraries.data, function(libraryID, library) {
+            Complet.addLibrary(library);
+            $.each(library.details, function(libraryDetailID, libraryDetail) {
+              Complet.addLibraryDetail(library, libraryDetail);
+            });
+          });
+          $.each(statuses, function(statusID, status) {
+            Complet.addStatus(status);
+          });
+        })
+        .fail(function(jqxhr, textStatus, errorThrown) {
+          console.log(`getLibraries failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+          Complet.syncErrorStatus('#libraries-loading');
+        });
       Complet.syncStopStatus('#libraries-loading');
     })
     .fail(function(jqxhr, textStatus, errorThrown) {
@@ -39,32 +39,33 @@ $(document).ready(function() {
     Complet.removeAllMessages();
     Complet.activateTab($(this));
     Complet.syncStartStatus('#libraries-loading');
-    $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
-      .done(function(libraries) {
-        Complet.removeAllLibraries();
-        $.each(libraries.messages, function(messageID, message) {
-          Complet.addMessage(messageID, message);
-        });
-        $.each(libraries.data, function(libraryID, library) {
-          Complet.addLibrary(library);
-          $.each(library.details, function(libraryDetailID, libraryDetail) {
-            Complet.addLibraryDetail(library, libraryDetail);
-          });
-        });
-        Complet.syncStopStatus('#libraries-loading');
-      })
-      .fail(function(jqxhr, textStatus, errorThrown) {
-        console.log(`getLibraries failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
-        Complet.syncErrorStatus('#libraries-loading');
-      });
-    Complet.syncStartStatus('#libraries-loading');
     $.getJSON('src/query.php', {"tab": tab, "function": "getStatuses"})
       .done(function(data) {
-        Complet.removeStatuses();
-        statuses = data.data;
-        $.each(statuses, function(statusID, status) {
-          Complet.addStatus(status);
+        $.each(data.messages, function(messageID, message) {
+          Complet.addMessage(messageID, message);
         });
+        statuses = data.data;
+        $.getJSON('src/query.php', {"tab": tab, "function": "getLibraries"})
+          .done(function(libraries) {
+            $.each(libraries.messages, function(messageID, message) {
+              Complet.addMessage(messageID, message);
+            });
+            Complet.removeAllLibraries();
+            $.each(libraries.data, function(libraryID, library) {
+              Complet.addLibrary(library);
+              $.each(library.details, function(libraryDetailID, libraryDetail) {
+                Complet.addLibraryDetail(library, libraryDetail);
+              });
+            });
+            Complet.removeStatuses();
+            $.each(statuses, function(statusID, status) {
+              Complet.addStatus(status);
+            });
+          })
+          .fail(function(jqxhr, textStatus, errorThrown) {
+            console.log(`getLibraries failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+            Complet.syncErrorStatus('#libraries-loading');
+          });
         Complet.syncStopStatus('#libraries-loading');
       })
       .fail(function(jqxhr, textStatus, errorThrown) {
