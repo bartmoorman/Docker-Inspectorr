@@ -16,7 +16,7 @@ class Complet {
   }
 
   static addStatus(status) {
-    $(`<span class='badge badge-${status.class} mr-2' title='${status.hint}'>${status.text}</span>`)
+    $(`<span class='badge badge-${status.class} mr-2 cursor-help' title='${status.hint}'>${status.text}</span>`)
       .appendTo('#statuses');
   }
 
@@ -36,7 +36,7 @@ class Complet {
   }
 
   static addLibraryDetail(library, status) {
-    $(`<span class='badge badge-pill badge-${statuses[status.status].class} toggle-status-sections ml-2' style='cursor:context-menu' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}'>${status.count.toLocaleString()}<span class='fa fa-chevron-down ml-1'></span></span>`)
+    $(`<span class='badge badge-pill badge-${statuses[status.status].class} toggle-status-sections ml-2 cursor-context-menu' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}'>${status.count.toLocaleString()}<span class='fa fa-chevron-down ml-1'></span></span>`)
       .appendTo(`#library-${library.id}-summary > h4`);
     $(`<div class='progress-bar progress-bar-striped bg-${statuses[status.status].class}' style='width:${status.count*100/library.count}%'></div>`)
       .appendTo(`#library-${library.id}-progress`);
@@ -50,7 +50,7 @@ class Complet {
   static addLibrarySection(library, status, section) {
     $(`<div id='library-${library.id}-status-${status.status}-section-${section.id}'></div>`)
       .appendTo(`#library-${library.id}-status-${status.status}`);
-    $(`<div id='library-${library.id}-status-${status.status}-section-${section.id}-summary' class='card-header'>${section.root_path}<span class='badge badge-pill badge-dark toggle-status-section-details ml-2' style='cursor:context-menu' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}' data-section='${JSON.stringify(section)}'>${section.count.toLocaleString()}<span class='fa fa-chevron-down ml-1'></span></span></div>`)
+    $(`<div id='library-${library.id}-status-${status.status}-section-${section.id}-summary' class='card-header'>${section.root_path}<span class='badge badge-pill badge-dark toggle-status-section-details ml-2 cursor-context-menu' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}' data-section='${JSON.stringify(section)}'>${section.count.toLocaleString()}<span class='fa fa-chevron-down ml-1'></span></span></div>`)
       .appendTo(`#library-${library.id}-status-${status.status}-section-${section.id}`);
   }
 
@@ -70,12 +70,12 @@ class Complet {
   }
 
   static syncStartStatus(selector) {
-    $(selector).removeClass('fa-exclamation-triangle refresh-libraries').addClass('fa-sync fa-spin');
+    $(selector).removeClass('fa-exclamation-triangle refresh-libraries cursor-pointer').addClass('fa-sync fa-spin cursor-not-allowed');
   }
 
   static syncStopStatus(selector) {
     $(selector).on('animationiteration', function() {
-      $(this).removeClass('fa-spin').addClass('refresh-libraries');
+      $(this).removeClass('fa-spin cursor-not-allowed').addClass('refresh-libraries cursor-pointer');
     });
   }
 

@@ -27,16 +27,16 @@ if ($auth->isConfigured() && !$auth->isValidSession()) {
         <div class='card-header'>
           <ul class='nav nav-tabs card-header-tabs float-left'>
             <li class='nav-item'>
-              <h4 class='mb-0'><a class='nav-link border-bottom-0 px-3 custom-tab active' onclick='void(0)' data-tab='indexStatus'><span class='fa fa-check'></span><span class='d-none d-md-inline ml-2'>Index Status</span></a></h4>
+              <h4 class='mb-0 cursor-default'><a class='nav-link border-bottom-0 px-3 custom-tab active' onclick='void(0)' data-tab='indexStatus'><span class='fa fa-check'></span><span class='d-none d-md-inline ml-2'>Index Status</span></a></h4>
             </li>
             <li class='nav-item'>
-              <h4 class='mb-0'><a class='nav-link border-bottom-0 px-3 custom-tab' onclick='void(0)' data-tab='audioQuality'><span class='fa fa-headphones'></span><span class='d-none d-md-inline ml-2'>Audio Quality</span></a></h4>
+              <h4 class='mb-0 cursor-default'><a class='nav-link border-bottom-0 px-3 custom-tab' onclick='void(0)' data-tab='audioQuality'><span class='fa fa-headphones'></span><span class='d-none d-md-inline ml-2'>Audio Quality</span></a></h4>
             </li>
             <li class='nav-item'>
-              <h4 class='mb-0'><a class='nav-link border-bottom-0 px-3 custom-tab' onclick='void(0)' data-tab='videoQuality'><span class='fa fa-video'></span><span class='d-none d-md-inline ml-2'>Video Quality</span></a></h4>
+              <h4 class='mb-0 cursor-default'><a class='nav-link border-bottom-0 px-3 custom-tab' onclick='void(0)' data-tab='videoQuality'><span class='fa fa-video'></span><span class='d-none d-md-inline ml-2'>Video Quality</span></a></h4>
             </li>
           </ul>
-          <h2 class='mb-0'><span id='libraries-loading' class='fa fa-sync text-muted float-right refresh-libraries' onclick='void(0)'></span></h2>
+          <h2 class='mb-0'><span id='libraries-loading' class='fa fa-sync text-muted float-right refresh-libraries cursor-pointer' title='Refresh libraries' onclick='void(0)'></span></h2>
         </div>
         <div id='libraries' class='card-body'>
         </div>
