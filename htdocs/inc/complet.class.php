@@ -24,7 +24,7 @@ class Complet {
           "AND `media_parts`.`extra_data` NOT LIKE ''"
         )
       ),
-      'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being read)',
+      'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being updated)',
         'filters' => array(
           "AND `media_parts`.`extra_data` NOT LIKE '%indexes%'",
           "AND `media_parts`.`extra_data` NOT LIKE '%failureBIF%'",

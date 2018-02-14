@@ -38,7 +38,7 @@ class Complet {
   static addLibraryDetail(library, status) {
     $(`<span class='badge badge-pill badge-${statuses[status.status].class} toggle-status-sections ml-2 cursor-context-menu' onclick='void(0)' data-library='${JSON.stringify(library)}' data-status='${JSON.stringify(status)}'>${status.count.toLocaleString()}<span class='fa fa-chevron-down ml-1'></span></span>`)
       .appendTo(`#library-${library.id}-summary > h4`);
-    $(`<div class='progress-bar progress-bar-striped bg-${statuses[status.status].class}' style='width:${status.count*100/library.count}%'></div>`)
+    $(`<div class='progress-bar progress-bar-striped bg-${statuses[status.status].class}' style='width:${status.count*100/library.count}%' title='${+(status.count*100/library.count).toFixed(2)}%'></div>`)
       .appendTo(`#library-${library.id}-progress`);
     $(`<div id='library-${library.id}-status-${status.status}' class='card border-${statuses[status.status].class} mb-3'></div>`)
       .hide()
