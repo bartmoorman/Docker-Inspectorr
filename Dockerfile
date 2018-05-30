@@ -1,4 +1,4 @@
-FROM bmoorman/ubuntu
+FROM bmoorman/ubuntu:latest
 
 ENV HTTPD_SERVERNAME="localhost"
 
