@@ -1,6 +1,4 @@
 #!/bin/bash
-chown www-data: /config
-
 export PMS_APPLICATIOM_SUPPORT_DIR="${PMS_APPLICATIOM_SUPPORT_DIR:-/data/Library/Application Support}"
 export PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
 export PMS_DATABASE_FILE="${PMS_DATABASE_FILE:-com.plexapp.plugins.library.db}"
@@ -13,6 +11,12 @@ if [ -f "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}
         touch "/tmp/${PMS_DATABASE_FILE}-wal"
         mount --bind "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}-wal" "/tmp/${PMS_DATABASE_FILE}-wal"
     fi
+fi
+
+chown www-data: /config
+
+if [ ! -d /config/sessions ]; then
+    install -o www-data -g www-data -d /config/sessions
 fi
 
 if [ ! -d /config/httpd/ssl ]; then

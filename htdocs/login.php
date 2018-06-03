@@ -29,7 +29,6 @@ if ($auth->isConfigured()) {
     <link rel='stylesheet' href='css/login.css'>
   </head>
   <body>
-    <div id='particles'></div>
     <div class='container'>
       <form class='login' method='post'>
 <?php
@@ -55,13 +54,17 @@ if (!empty($auth->errors)) {
 ?>
         <div class='form-group'>
           <div class='input-group input-group-lg'>
-            <span class='input-group-addon bg-secondary border border-dark fa fa-user'></span>
+            <div class='input-group-prepend'>
+              <span class='input-group-text bg-secondary border border-dark fa fa-user'></span>
+            </div>
             <input type='text' class='form-control bg-secondary border border-dark text-white' placeholder='Username' name='username' required autofocus>
           </div>
         </div>
         <div class='form-group'>
           <div class='input-group input-group-lg'>
-            <span class='input-group-addon bg-secondary border border-dark fa fa-key'></span>
+            <div class='input-group-prepend'>
+              <span class='input-group-text bg-secondary border border-dark fa fa-key'></span>
+            </div>
             <input type='password' class='form-control bg-secondary border border-dark text-white' placeholder='Password' name='password' required>
           </div>
         </div>
@@ -71,6 +74,5 @@ if (!empty($auth->errors)) {
     <script src='//code.jquery.com/jquery-3.2.1.min.js' integrity='sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDX2v5cMvDHcMakNTNrHIW2I5f' crossorigin='anonymous'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js' integrity='sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q' crossorigin='anonymous'></script>
     <script src='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js' integrity='sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl' crossorigin='anonymous'></script>
-    <script src='js/particles.js'></script>
   </body>
 </html>

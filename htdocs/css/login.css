@@ -2,13 +2,6 @@ html, body {
   height: 100%;
 }
 
-#particles {
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  z-index: 1;
-}
-
 .login {
   top: 50%;
   left: 50%;
@@ -16,4 +9,8 @@ html, body {
   width: 300px;
   position: absolute;
   z-index: 2;
+}
+
+.input-group-text {
+  width: 55px;
 }
