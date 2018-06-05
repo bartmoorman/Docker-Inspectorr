@@ -1,17 +1,10 @@
 #!/bin/bash
-export PMS_APPLICATIOM_SUPPORT_DIR="${PMS_APPLICATIOM_SUPPORT_DIR:-/data/Library/Application Support}"
-export PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
-export PMS_DATABASE_FILE="${PMS_DATABASE_FILE:-com.plexapp.plugins.library.db}"
+PMS_CONFIG_DIR="${PMS_DIR:-/data}"
+PMS_APPLICATIOM_SUPPORT_DIR="${PMS_APPLICATIOM_SUPPORT_DIR:-Library/Application Support}"
+PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
+PMS_DATABASE_FILE="${PMS_DATABASE_FILE:-com.plexapp.plugins.library.db}"
 
-if [ -f "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}" ]; then
-    touch "/tmp/${PMS_DATABASE_FILE}"
-    mount --bind "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}" "/tmp/${PMS_DATABASE_FILE}"
-
-    if [ -f "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}-wal" ]; then
-        touch "/tmp/${PMS_DATABASE_FILE}-wal"
-        mount --bind "${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}-wal" "/tmp/${PMS_DATABASE_FILE}-wal"
-    fi
-fi
+export PMS_DATABASE="${PMS_CONFIG_DIR}/${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATABASE_DIR}/${PMS_DATABASE_FILE}"
 
 chown www-data: /config
 

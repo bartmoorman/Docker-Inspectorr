@@ -87,16 +87,10 @@ class Complet {
   private $queryTime = 0;
 
   public function __construct() {
-    $pmsDatabaseFile = getenv('PMS_DATABASE_FILE');
+    $dbFile = getenv('PMS_DATABASE');
 
-    if (file_exists("/tmp/{$pmsDatabaseFile}")) {
-      if (!file_exists("/tmp/{$pmsDatabaseFile}-wal")) {
-        $this->messages['warning'][] = "/tmp/{$pmsDatabaseFile}-wal doesn't exist. This will likely cause delayed updates.";
-      }
-
-      $dbFile = "/tmp/{$pmsDatabaseFile}";
-    } else {
-      $this->messages['danger'][] = "Unable to locate {$pmsDatabaseFile}. This is fatal.";
+    if (!is_readable($dbFile)) {
+      $this->messages['danger'][] = "Unable to read {$dbFile}. This is fatal.";
       return;
     }
 
@@ -127,18 +121,13 @@ class Complet {
   }
 
   private function fetchLibraries() {
-    $pmsExcludeLibraryIDs = implode(', ', explode(',', getenv('PMS_EXCLUDE_LIBRARY_IDS')));
-    $pmsExcludeLibraryNames = implode("', '", explode(',', getenv('PMS_EXCLUDE_LIBRARY_NAMES')));
-
     $query = <<<EOQ
 SELECT `library_sections`.`id`, `library_sections`.`name`, COUNT(*) AS `count`
 FROM `library_sections`
 JOIN `metadata_items` ON `metadata_items`.`library_section_id` = `library_sections`.`id`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
-WHERE `library_sections`.`id` NOT IN ({$pmsExcludeLibraryIDs})
-AND `library_sections`.`name` NOT IN ('{$pmsExcludeLibraryNames}')
-AND `library_sections`.`section_type` IN (1,2)
+WHERE `library_sections`.`section_type` IN (1,2)
 GROUP BY `library_sections`.`id`
 ORDER BY `library_sections`.`name`
 EOQ;
