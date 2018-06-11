@@ -1,11 +1,11 @@
 <?php
 require_once('inc/inspectorr.class.php');
-$inspectorr = new Inspectorr(true, false, false, true);
+$inspectorr = new Inspectorr(false, true, false, true);
 ?>
 <!DOCTYPE html>
 <html lang='en'>
   <head>
-    <title>Inspectorr - Login</title>
+    <title>Inspectorr - Setup</title>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
     <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css' integrity='sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm' crossorigin='anonymous'>
@@ -14,21 +14,42 @@ $inspectorr = new Inspectorr(true, false, false, true);
   </head>
   <body>
     <div class='modal d-block'>
-      <div class='modal-dialog modal-sm modal-dialog-centered'>
+      <div class='modal-dialog modal-dialog-centered'>
         <div class='modal-content'>
           <form>
+            <div class='modal-header'>
+              <h5 class='modal-title'>Inspectorr Setup</h5>
+            </div>
             <div class='modal-body'>
-              <div class='form-group'>
-                <label>Username <sup class='text-danger'>*</sup></label>
-                <input class='form-control' id='username' type='text' name='username' pattern='[A-Za-z0-9]+' required>
+              <div class='form-row'>
+                <div class='form-group col'>
+                  <label>Username <sup class='text-danger'>*</sup></label>
+                  <input class='form-control' id='username' type='text' name='username' pattern='[A-Za-z0-9]+' required>
+                </div>
+                <div class='form-group col'>
+                  <label>Password <sup class='text-danger'>*</sup></label>
+                  <input class='form-control' id='password' type='password' name='password' required>
+                </div>
               </div>
-              <div class='form-group'>
-                <label>Password <sup class='text-danger'>*</sup></label>
-                <input class='form-control' id='password' type='password' name='password' required>
+              <div class='form-row'>
+                <div class='form-group col'>
+                  <label>First Name <sup class='text-danger'>*</sup></label>
+                  <input class='form-control' id='first_name' type='text' name='first_name' required>
+                </div>
+                <div class='form-group col'>
+                  <label>Last Name</label>
+                  <input class='form-control' id='last_name' type='text' name='last_name'>
+                </div>
+              </div>
+              <div class='form-row'>
+                <div class='form-group col'>
+                  <label>Role <sup class='text-danger'>*</sup></label>
+                  <input class='form-control' id='role' type='text' name='role' value='admin' readonly required>
+                </div>
               </div>
             </div>
             <div class='modal-footer'>
-              <button type='submit' class='btn btn-info id-login'>Log in</button>
+              <button type='submit' class='btn btn-info'>Setup</button>
             </div>
           </form>
         </div>
@@ -41,8 +62,7 @@ $inspectorr = new Inspectorr(true, false, false, true);
       $(document).ready(function() {
         $('form').submit(function(e) {
           e.preventDefault();
-          $('button.id-login').prop('disabled', true);
-          $.post('src/action.php', {"func": "authenticateSession", "username": $('#username').val(), "password": $('#password').val()})
+          $.post('src/action.php', {"func": "createUser", "username": $('#username').val(), "password": $('#password').val(), "first_name": $('#first_name').val(), "last_name": $('#last_name').val(), "role": $('#role').val()})
             .done(function(data) {
               if (data.success) {
                 location.href = '<?php echo dirname($_SERVER['PHP_SELF']) ?>';
@@ -50,9 +70,6 @@ $inspectorr = new Inspectorr(true, false, false, true);
             })
             .fail(function(jqxhr, textStatus, errorThrown) {
               console.log(`createUser failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
-            })
-            .always(function() {
-              $('button.id-login').prop('disabled', false);
             });
         });
       });
