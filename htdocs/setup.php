@@ -24,11 +24,11 @@ $inspectorr = new Inspectorr(false, true, false, true);
               <div class='form-row'>
                 <div class='form-group col'>
                   <label>Username <sup class='text-danger'>*</sup></label>
-                  <input class='form-control' id='username' type='text' name='username' pattern='[A-Za-z0-9]+' required>
+                  <input class='form-control' id='username' type='text' name='username' pattern='[A-Za-z0-9]+' autofocus required>
                 </div>
                 <div class='form-group col'>
                   <label>Password <sup class='text-danger'>*</sup></label>
-                  <input class='form-control' id='password' type='password' name='password' required>
+                  <input class='form-control' id='password' type='password' name='password' minlength='6' required>
                 </div>
               </div>
               <div class='form-row'>

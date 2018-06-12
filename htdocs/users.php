@@ -65,7 +65,7 @@ foreach ($inspectorr->getUsers() as $user) {
                 </div>
                 <div class='form-group col'>
                   <label>Password <sup class='text-danger id-required'>*</sup></label>
-                  <input class='form-control id-password' id='password' type='password' name='password' required>
+                  <input class='form-control id-password' id='password' type='password' name='password' minlength='6' required>
                 </div>
               </div>
               <div class='form-row'>
@@ -75,7 +75,7 @@ foreach ($inspectorr->getUsers() as $user) {
                 </div>
                 <div class='form-group col'>
                   <label>Last Name</label>
-                  <input class='form-control' id='last_name' type='text' name='last_name''>
+                  <input class='form-control' id='last_name' type='text' name='last_name'>
                 </div>
               </div>
               <div class='form-row'>

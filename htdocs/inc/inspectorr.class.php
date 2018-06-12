@@ -1,4 +1,5 @@
 <?php
+ini_set('date.timezone', 'UTC');
 ini_set('session.save_path', '/config/sessions');
 ini_set('session.gc_maxlifetime', 24 * 60 * 60);
 ini_set('session.use_strict_mode', true);
@@ -11,6 +12,91 @@ class Inspectorr {
   private $dbConn;
   private $plexDbConn;
   public $pageLimit = 20;
+  public $tabs = array(
+    'index-status' => array('text' => 'Index Status', 'icon' => 'check'),
+    'audio-quality' => array('text' => 'Audio Quality', 'icon' => 'headphones'),
+    'video-quality' => array('text' => 'Video Quality', 'icon' => 'video')
+  );
+  public $statuses = array(
+    'index-status' => array(
+      'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete',
+        'filters' => array(
+          "`media_parts`.`extra_data` LIKE '%indexes%'",
+          "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
+          "`media_parts`.`extra_data` NOT LIKE ''"
+        )
+      ),
+      'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started',
+        'filters' => array(
+          "`media_parts`.`extra_data` NOT LIKE '%indexes%'",
+          "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
+          "`media_parts`.`extra_data` NOT LIKE ''"
+        )
+      ),
+      'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed - possible corrupt media',
+        'filters' => array(
+          "`media_parts`.`extra_data` NOT LIKE '%indexes%'",
+          "`media_parts`.`extra_data` LIKE '%failureBIF%'",
+          "`media_parts`.`extra_data` NOT LIKE ''"
+        )
+      ),
+      'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being updated)',
+        'filters' => array(
+          "`media_parts`.`extra_data` NOT LIKE '%indexes%'",
+          "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
+          "`media_parts`.`extra_data` LIKE ''"
+        )
+      )
+    ),
+    'audio-quality' => array(
+      'uhd' => array('text' => 'UHD', 'class' => 'success', 'hint' => '7.1 or higher',
+        'filters' => array(
+          "`media_items`.`audio_channels` >= 8"
+        )
+      ),
+      'hd' => array('text' => 'HD', 'class' => 'info', 'hint' => '5.1 or higher, below 7.1',
+        'filters' => array(
+          "`media_items`.`audio_channels` < 8",
+          "`media_items`.`audio_channels` >= 6"
+        )
+      ),
+      'sd' => array('text' => 'SD', 'class' => 'warning', 'hint' => 'Stereo or higher, below 5.1',
+        'filters' => array(
+          "`media_items`.`audio_channels` < 6",
+          "`media_items`.`audio_channels` >= 2"
+        )
+      ),
+      'other' => array('text' => 'Other', 'class' => 'danger', 'hint' => 'below Stereo',
+        'filters' => array(
+          "`media_items`.`audio_channels` < 2"
+        )
+      )
+    ),
+    'video-quality' => array(
+      'uhd' => array('text' => 'UHD', 'class' => 'success', 'hint' => '4k or higher',
+        'filters' => array(
+          "`media_items`.`width` >= 2160"
+        )
+      ),
+      'hd' => array('text' => 'HD', 'class' => 'info', 'hint' => '1080p or higher, below 4k',
+        'filters' => array(
+          "`media_items`.`width` < 2160",
+          "`media_items`.`width` >= 1920"
+        )
+      ),
+      'sd' => array('text' => 'SD', 'class' => 'warning', 'hint' => '720p or higher, below 1080p',
+        'filters' => array(
+          "`media_items`.`width` < 1920",
+          "`media_items`.`width` >= 1280"
+        )
+      ),
+      'other' => array('text' => 'Other', 'class' => 'danger', 'hint' => 'below 720p',
+        'filters' => array(
+          "`media_items`.`width` < 1280"
+        )
+      )
+    )
+  );
 
   public function __construct($requireConfigured = true, $requireValidSession = true, $requireAdmin = true, $requireIndex = false) {
     session_start();
@@ -191,6 +277,7 @@ WHERE `user_id` != '{$user_id}'
 AND `username` = '{$username}';
 EOQ;
     if (!$this->dbConn->querySingle($query)) {
+      $passwordQuery = null;
       if (!empty($password)) {
         $password = password_hash($password, PASSWORD_DEFAULT);
         $passwordQuery = <<<EOQ
@@ -327,6 +414,40 @@ EOQ;
     return false;
   }
 
+  private function buildSelectCases($tab) {
+    $cases = null;
+    foreach ($this->statuses[$tab] as $status => $options) {
+      $caseFilter = implode(' AND ', $options['filters']);
+      $cases .= <<<EOQ
+WHEN {$caseFilter} THEN '{$status}'
+
+EOQ;
+    }
+    return $cases;
+  }
+
+  private function buildOrderCases($tab) {
+    $cases = null;
+    foreach (array_keys($this->statuses[$tab]) as $order => $status) {
+      $cases .= <<<EOQ
+WHEN '{$status}' THEN '{$order}'
+
+EOQ;
+    }
+    return $cases;
+  }
+
+  private function buildFilters($tab, $status) {
+    $filters = null;
+    foreach ($this->statuses[$tab][$status]['filters'] as $filter) {
+      $filters .= <<<EOQ
+AND {$filter}
+
+EOQ;
+    }
+    return $filters;
+  }
+
   public function getLibraries() {
     $query = <<<EOQ
 SELECT `library_sections`.`id`, `library_sections`.`name`, COUNT(*) AS `count`
@@ -334,7 +455,7 @@ FROM `library_sections`
 JOIN `metadata_items` ON `metadata_items`.`library_section_id` = `library_sections`.`id`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
-WHERE `library_sections`.`section_type` IN (1,2)
+WHERE `library_sections`.`section_type` IN (1, 2)
 GROUP BY `library_sections`.`id`
 ORDER BY `library_sections`.`name`;
 EOQ;
@@ -344,6 +465,52 @@ EOQ;
         $output[] = $library;
       }
       return $output;
+    }
+    return false;
+  }
+
+  public function getLibraryStatusCounts($tab, $library) {
+    $query = <<<EOQ
+SELECT CASE
+{$this->buildSelectCases($tab)}
+END AS `status`, COUNT(*) AS `count`
+FROM `metadata_items`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `metadata_items`.`library_section_id` = '{$library['id']}'
+GROUP BY `status`
+ORDER BY CASE `status`
+{$this->buildOrderCases($tab)}
+END;
+EOQ;
+    if ($counts = $this->plexDbConn->query($query)) {
+      $output = array();
+      while ($count = $counts->fetchArray(SQLITE3_ASSOC)) {
+        $output[] = $count;
+      }
+        return $output;
+    }
+    return false;
+  }
+
+  public function getLibrarySectionCounts($tab, $library, $status) {
+$query = <<<EOQ
+SELECT `section_locations`.`id`, `section_locations`.`root_path`, COUNT(*) AS `count`
+FROM `metadata_items`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+JOIN `section_locations` ON `section_locations`.`id` = `media_items`.`section_location_id`
+WHERE `metadata_items`.`library_section_id` = '{$library['id']}'
+{$this->buildFilters($tab, $status)}
+GROUP BY `section_locations`.`id`
+ORDER BY `section_locations`.`id`;
+EOQ;
+    if ($sections = $this->plexDbConn->query($query)) {
+      $output = array();
+      while ($section = $sections->fetchArray(SQLITE3_ASSOC)) {
+        $output[] = $section;
+      }
+        return $output;
     }
     return false;
   }
