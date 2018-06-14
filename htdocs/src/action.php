@@ -81,6 +81,28 @@ switch ($_REQUEST['func']) {
       $output['message'] = 'Unauthorized';
     }
     break;
+  case 'getLibraryStatusSectionDetails':
+    if ($inspectorr->isValidSession()) {
+      if (!empty($_REQUEST['tab']) && !empty($_REQUEST['library']) && !empty($_REQUEST['status']) && !empty($_REQUEST['section'])) {
+        if ($output['data'] = $inspectorr->getLibraryStatusSectionDetails($_REQUEST['tab'], $_REQUEST['library'], $_REQUEST['status'], $_REQUEST['section'])) {
+          $output['success'] = true;
+          $putEvent = false;
+        } else {
+          $output['success'] = false;
+          $log['tab'] = $_REQUEST['tab'];
+          $log['library'] = $_REQUEST['library'];
+          $log['status'] = $_REQUEST['status'];
+          $log['section'] = $_REQUEST['section'];
+        }
+      } else {
+        $output['success'] = false;
+        $output['message'] = 'Missing arguments';
+      }
+    } else {
+      $output['success'] = false;
+      $output['message'] = 'Unauthorized';
+    }
+    break;
 }
 
 if ($putEvent) {

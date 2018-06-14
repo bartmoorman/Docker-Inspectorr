@@ -462,7 +462,7 @@ EOQ;
     if ($libraries = $this->plexDbConn->query($query)) {
       $output = array();
       while ($library = $libraries->fetchArray(SQLITE3_ASSOC)) {
-        $output[] = $library;
+        $output[$library['id']] = $library;
       }
       return $output;
     }
@@ -477,7 +477,7 @@ END AS `status`, COUNT(*) AS `count`
 FROM `metadata_items`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
-WHERE `metadata_items`.`library_section_id` = '{$library['id']}'
+WHERE `metadata_items`.`library_section_id` = '{$library}'
 GROUP BY `status`
 ORDER BY CASE `status`
 {$this->buildOrderCases($tab)}
@@ -486,31 +486,82 @@ EOQ;
     if ($counts = $this->plexDbConn->query($query)) {
       $output = array();
       while ($count = $counts->fetchArray(SQLITE3_ASSOC)) {
-        $output[] = $count;
+        $output[$count['status']] = $count;
       }
-        return $output;
+      return $output;
     }
     return false;
   }
 
-  public function getLibrarySectionCounts($tab, $library, $status) {
+  public function getLibraryStatusSectionCounts($tab, $library) {
 $query = <<<EOQ
-SELECT `section_locations`.`id`, `section_locations`.`root_path`, COUNT(*) AS `count`
+SELECT CASE
+{$this->buildSelectCases($tab)}
+END AS `status`, `section_locations`.`id`, `section_locations`.`root_path`, COUNT(*) AS `count`
 FROM `metadata_items`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
 JOIN `section_locations` ON `section_locations`.`id` = `media_items`.`section_location_id`
-WHERE `metadata_items`.`library_section_id` = '{$library['id']}'
-{$this->buildFilters($tab, $status)}
-GROUP BY `section_locations`.`id`
-ORDER BY `section_locations`.`id`;
+WHERE `metadata_items`.`library_section_id` = '{$library}'
+GROUP BY `status`, `section_locations`.`id`
+ORDER BY CASE `status`
+{$this->buildOrderCases($tab)}
+END, `section_locations`.`id`;
 EOQ;
     if ($sections = $this->plexDbConn->query($query)) {
       $output = array();
       while ($section = $sections->fetchArray(SQLITE3_ASSOC)) {
-        $output[] = $section;
+        $output[$section['status']][$section['id']] = $section;
       }
+      return $output;
+    }
+    return false;
+  }
+
+  public function getLibraryStatusSectionDetails($tab, $library, $status, $section) {
+    $query = <<<EOQ
+SELECT `library_sections`.`section_type`
+FROM `library_sections`
+WHERE `library_sections`.`id` = '{$library}';
+EOQ;
+    if ($librarySectionType = $this->plexDbConn->querySingle($query)) {
+      switch ($librarySectionType) {
+        case 1:
+          $query = <<<EOQ
+SELECT `movie`.`title`, `movie`.`year`
+FROM `metadata_items` AS `movie`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `movie`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `movie`.`library_section_id` = {$library}
+AND `media_items`.`section_location_id` = {$section}
+{$this->buildFilters($tab, $status)}
+ORDER BY `movie`.`title_sort`;
+EOQ;
+          $format = '%s (%u)';
+          break;
+        case 2:
+          $query = <<<EOQ
+SELECT `show`.`title` AS `show_title`, `season`.`index` AS `season`, `episode`.`index` AS `episode`, `episode`.`title` AS `episode_title`
+FROM `metadata_items` AS `show`
+JOIN `metadata_items` AS `season` ON `season`.`parent_id` = `show`.`id`
+JOIN `metadata_items` AS `episode` ON `episode`.`parent_id` = `season`.`id`
+JOIN `media_items` ON `media_items`.`metadata_item_id` = `episode`.`id`
+JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
+WHERE `show`.`library_section_id` = {$library}
+AND `media_items`.`section_location_id` = {$section}
+{$this->buildFilters($tab, $status)}
+ORDER BY `show`.`title_sort`, `season`.`index`, `episode`.`index`;
+EOQ;
+          $format = '%s - s%02ue%02u - %s';
+          break;
+      }
+      if ($details = $this->plexDbConn->query($query)) {
+        $output = array();
+        while ($detail = $details->fetchArray(SQLITE3_ASSOC)) {
+          $output[] = vsprintf($format, $detail);
+        }
         return $output;
+      }
     }
     return false;
   }

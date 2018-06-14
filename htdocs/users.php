@@ -35,11 +35,7 @@ foreach ($inspectorr->getUsers() as $user) {
   $user_name = !empty($user['last_name']) ? sprintf('%2$s, %1$s', $user['first_name'], $user['last_name']) : $user['first_name'];
   $tableClass = $user['disabled'] ? 'text-warning' : 'table-default';
   echo "          <tr class='{$tableClass}'>" . PHP_EOL;
-  if ($user['disabled']) {
-    echo "            <td><button type='button' class='btn btn-sm btn-outline-warning id-modify' data-action='enable' data-user_id='{$user['user_id']}'>Enable</button></td>" . PHP_EOL;
-  } else {
-    echo "            <td><button type='button' class='btn btn-sm btn-outline-info id-details' data-user_id='{$user['user_id']}'>Details</button></td>" . PHP_EOL;
-  }
+  echo "            <td><button type='button' class='btn btn-sm btn-outline-info id-details' data-user_id='{$user['user_id']}'>Details</button></td>" . PHP_EOL;
   echo "            <td>{$user['user_id']}</td>" . PHP_EOL;
   echo "            <td>{$user['username']}</td>" . PHP_EOL;
   echo "            <td>{$user_name}</td>" . PHP_EOL;
@@ -89,8 +85,8 @@ foreach ($inspectorr->getUsers() as $user) {
               </div>
             </div>
             <div class='modal-footer'>
-              <button type='button' class='btn btn-outline-warning id-modify id-volatile' data-action='disable'>Disable</button>
-              <button type='button' class='btn btn-outline-danger mr-auto id-modify id-volatile' data-action='delete'>Delete</button>
+              <button type='button' class='btn btn-outline-warning id-modify id-volatile'></button>
+              <button type='button' class='btn btn-outline-danger mr-auto id-modify' data-action='delete'>Delete</button>
               <button type='button' class='btn btn-secondary' data-dismiss='modal'>Close</button>
               <button type='submit' class='btn id-submit'></button>
             </div>
@@ -108,7 +104,7 @@ foreach ($inspectorr->getUsers() as $user) {
           $('form').removeData('user_id').data('func', 'createUser').trigger('reset');
           $('sup.id-required').removeClass('d-none');
           $('input.id-password').prop('required', true);
-          $('button.id-modify.id-volatile').addClass('d-none').removeData('user_id');
+          $('button.id-modify').addClass('d-none').removeData('user_id');
           $('button.id-submit').removeClass('btn-info').addClass('btn-success').text('Add');
           $('div.id-modal').modal('toggle');
         });
@@ -117,7 +113,7 @@ foreach ($inspectorr->getUsers() as $user) {
           $('form').removeData('user_id').data('func', 'updateUser').trigger('reset');
           $('sup.id-required').addClass('d-none');
           $('input.id-password').prop('required', false);
-          $('button.id-modify.id-volatile').removeClass('d-none').removeData('user_id');
+          $('button.id-modify').removeClass('d-none').removeData('user_id');
           $('button.id-submit').removeClass('btn-success').addClass('btn-info').text('Save');
           $.get('src/action.php', {"func": "getUserDetails", "user_id": $(this).data('user_id')})
             .done(function(data) {
@@ -128,7 +124,8 @@ foreach ($inspectorr->getUsers() as $user) {
                 $('#first_name').val(user.first_name);
                 $('#last_name').val(user.last_name);
                 $('#role').val(user.role);
-                $('button.id-modify.id-volatile').data('user_id', user.user_id);
+                $('button.id-modify.id-volatile').data('action', user.disabled ? 'enable' : 'disable').text(user.disabled ? 'Enable' : 'Disable');
+                $('button.id-modify').data('user_id', user.user_id);
                 $('div.id-modal').modal('toggle');
               }
             })

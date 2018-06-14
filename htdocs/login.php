@@ -20,11 +20,11 @@ $inspectorr = new Inspectorr(true, false, false, true);
             <div class='modal-body'>
               <div class='form-group'>
                 <label>Username</label>
-                <input class='form-control form-control-lg' id='username' type='text' name='username' pattern='[A-Za-z0-9]+' autofocus required>
+                <input class='form-control form-control-lg' id='username' type='text' name='username' autofocus required>
               </div>
               <div class='form-group'>
                 <label>Password</label>
-                <input class='form-control form-control-lg' id='password' type='password' name='password' minlength='6' required>
+                <input class='form-control form-control-lg' id='password' type='password' name='password' required>
               </div>
             </div>
             <div class='modal-footer'>
