@@ -1,5 +1,5 @@
 #!/bin/bash
-PMS_CONFIG_DIR="${PMS_DIR:-/data}"
+PMS_CONFIG_DIR="${PMS_CONFIG_DIR:-/data}"
 PMS_APPLICATIOM_SUPPORT_DIR="${PMS_APPLICATIOM_SUPPORT_DIR:-Library/Application Support}"
 PMS_DATABASE_DIR="${PMS_DATABASE_DIR:-Plex Media Server/Plug-in Support/Databases}"
 PMS_DATABASE_FILE="${PMS_DATABASE_FILE:-com.plexapp.plugins.library.db}"

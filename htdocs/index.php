@@ -42,7 +42,7 @@ foreach ($inspectorr->tabs as $tab => $details) {
 }
 ?>
           </ul>
-          <span class='fa fa-2x fa-circle-notch float-right' id='loading'></span>
+          <span class='fa fa-2x fa-spinner float-right' id='loading'></span>
         </div>
         <div class='card-body'>
           <div class='tab-content'>
@@ -137,7 +137,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
         $('div.card-body.collapse').on('show.bs.collapse', function() {
           var parent = $(this).children('div');
           if (!parent.has('p').length) {
-            $('#loading').removeClass('fa-exclamation-triangle').addClass('fa-circle-notch fa-spin');
+            $('#loading').removeClass('fa-exclamation-triangle').addClass('fa-spinner fa-pulse');
             $.get('src/action.php', {"func": "getLibraryStatusSectionDetails", "tab": $(this).data('tab'), "library": $(this).data('library'), "status": $(this).data('status'), "section": $(this).data('section')})
               .done(function(data) {
                 if (data.success) {
@@ -146,14 +146,14 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
                   });
                 }
                 $('#loading').on('animationiteration', function() {
-                  $(this).removeClass('fa-spin');
+                  $(this).removeClass('fa-pulse');
                 });
               })
               .fail(function(jqxhr, textStatus, errorThrown) {
                 console.log(`getLibraryStatusSectionDetails failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
               })
               .always(function() {
-                $(this).removeClass('fa-circle-notch fa-spin').addClass('fa-exclamation-triangle');
+                $(this).removeClass('fa-spinner fa-pulse').addClass('fa-exclamation-triangle');
               });
           }
         });

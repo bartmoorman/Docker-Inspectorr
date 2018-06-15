@@ -28,7 +28,7 @@ $inspectorr = new Inspectorr(true, false, false, true);
               </div>
             </div>
             <div class='modal-footer'>
-              <button type='submit' class='btn btn-lg btn-info id-login'>Log in</button>
+              <button type='submit' class='btn btn-lg btn-info btn-block id-login'>Log in</button>
             </div>
           </form>
         </div>
