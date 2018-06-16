@@ -11,7 +11,6 @@ switch ($_REQUEST['func']) {
     if (!empty($_REQUEST['username']) && !empty($_REQUEST['password'])) {
       $output['success'] = $inspectorr->authenticateSession($_REQUEST['username'], $_REQUEST['password']);
       $log['username'] = $_REQUEST['username'];
-      usleep(rand(1000000, 1250000));
     } else {
       $output['success'] = false;
       $output['message'] = 'Missing arguments';
