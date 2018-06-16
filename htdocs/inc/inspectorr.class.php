@@ -1,105 +1,47 @@
 <?php
 ini_set('date.timezone', 'UTC');
-ini_set('session.save_path', '/config/sessions');
-ini_set('session.gc_maxlifetime', 24 * 60 * 60);
-ini_set('session.use_strict_mode', true);
-ini_set('session.cookie_lifetime', 24 * 60 * 60);
-ini_set('session.cookie_secure', true);
-ini_set('session.cookie_httponly', true);
 
 class Inspectorr {
   private $dbFile = '/config/inspectorr.db';
   private $dbConn;
   private $plexDbConn;
   public $pageLimit = 20;
-  public $tabs = array(
-    'index-status' => array('text' => 'Index Status', 'icon' => 'check'),
-    'audio-quality' => array('text' => 'Audio Quality', 'icon' => 'headphones'),
-    'video-quality' => array('text' => 'Video Quality', 'icon' => 'video')
-  );
-  public $statuses = array(
-    'index-status' => array(
-      'complete' => array('text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete',
-        'filters' => array(
-          "`media_parts`.`extra_data` LIKE '%indexes%'",
-          "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
-          "`media_parts`.`extra_data` NOT LIKE ''"
-        )
-      ),
-      'pending' => array('text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started',
-        'filters' => array(
-          "`media_parts`.`extra_data` NOT LIKE '%indexes%'",
-          "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
-          "`media_parts`.`extra_data` NOT LIKE ''"
-        )
-      ),
-      'failed' => array('text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed - possible corrupt media',
-        'filters' => array(
-          "`media_parts`.`extra_data` NOT LIKE '%indexes%'",
-          "`media_parts`.`extra_data` LIKE '%failureBIF%'",
-          "`media_parts`.`extra_data` NOT LIKE ''"
-        )
-      ),
-      'corrupt' => array('text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being updated)',
-        'filters' => array(
-          "`media_parts`.`extra_data` NOT LIKE '%indexes%'",
-          "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'",
-          "`media_parts`.`extra_data` LIKE ''"
-        )
-      )
-    ),
-    'audio-quality' => array(
-      'uhd' => array('text' => 'UHD', 'class' => 'success', 'hint' => '7.1 or higher',
-        'filters' => array(
-          "`media_items`.`audio_channels` >= 8"
-        )
-      ),
-      'hd' => array('text' => 'HD', 'class' => 'info', 'hint' => '5.1 or higher, below 7.1',
-        'filters' => array(
-          "`media_items`.`audio_channels` < 8",
-          "`media_items`.`audio_channels` >= 6"
-        )
-      ),
-      'sd' => array('text' => 'SD', 'class' => 'warning', 'hint' => 'Stereo or higher, below 5.1',
-        'filters' => array(
-          "`media_items`.`audio_channels` < 6",
-          "`media_items`.`audio_channels` >= 2"
-        )
-      ),
-      'other' => array('text' => 'Other', 'class' => 'danger', 'hint' => 'below Stereo',
-        'filters' => array(
-          "`media_items`.`audio_channels` < 2"
-        )
-      )
-    ),
-    'video-quality' => array(
-      'uhd' => array('text' => 'UHD', 'class' => 'success', 'hint' => '4k or higher',
-        'filters' => array(
-          "`media_items`.`width` >= 2160"
-        )
-      ),
-      'hd' => array('text' => 'HD', 'class' => 'info', 'hint' => '1080p or higher, below 4k',
-        'filters' => array(
-          "`media_items`.`width` < 2160",
-          "`media_items`.`width` >= 1920"
-        )
-      ),
-      'sd' => array('text' => 'SD', 'class' => 'warning', 'hint' => '720p or higher, below 1080p',
-        'filters' => array(
-          "`media_items`.`width` < 1920",
-          "`media_items`.`width` >= 1280"
-        )
-      ),
-      'other' => array('text' => 'Other', 'class' => 'danger', 'hint' => 'below 720p',
-        'filters' => array(
-          "`media_items`.`width` < 1280"
-        )
-      )
-    )
-  );
+  public $tabs = [
+    'index-status' => ['text' => 'Index Status', 'icon' => 'check'],
+    'audio-quality' => ['text' => 'Audio Quality', 'icon' => 'headphones'],
+    'video-quality' => ['text' => 'Video Quality', 'icon' => 'video']
+  ];
+  public $statuses = [
+    'index-status' => [
+      'complete' => ['text' => 'Complete', 'class' => 'success', 'hint' => 'Indexing is complete', 'filters' => ["`media_parts`.`extra_data` LIKE '%indexes%'", "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'", "`media_parts`.`extra_data` NOT LIKE ''"]],
+      'pending' => ['text' => 'Pending', 'class' => 'info', 'hint' => 'Indexing has not started', 'filters' => ["`media_parts`.`extra_data` NOT LIKE '%indexes%'", "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'", "`media_parts`.`extra_data` NOT LIKE ''"]],
+      'failed' => ['text' => 'Failed', 'class' => 'warning', 'hint' => 'Indexing failed - possible corrupt media', 'filters' => ["`media_parts`.`extra_data` NOT LIKE '%indexes%'", "`media_parts`.`extra_data` LIKE '%failureBIF%'", "`media_parts`.`extra_data` NOT LIKE ''"]],
+      'corrupt' => ['text' => 'Corrupt', 'class' => 'danger', 'hint' => 'Indexing not possible - corrupt media (or metadata still being updated)', 'filters' => ["`media_parts`.`extra_data` NOT LIKE '%indexes%'", "`media_parts`.`extra_data` NOT LIKE '%failureBIF%'", "`media_parts`.`extra_data` LIKE ''"]]
+    ],
+    'audio-quality' => [
+      'uhd' => ['text' => 'UHD', 'class' => 'success', 'hint' => '7.1 or higher', 'filters' => ["`media_items`.`audio_channels` >= 8"]],
+      'hd' => ['text' => 'HD', 'class' => 'info', 'hint' => '5.1 or higher, below 7.1', 'filters' => ["`media_items`.`audio_channels` < 8", "`media_items`.`audio_channels` >= 6"]],
+      'sd' => ['text' => 'SD', 'class' => 'warning', 'hint' => 'Stereo or higher, below 5.1', 'filters' => ["`media_items`.`audio_channels` < 6", "`media_items`.`audio_channels` >= 2"]],
+      'other' => ['text' => 'Other', 'class' => 'danger', 'hint' => 'below Stereo', 'filters' => ["`media_items`.`audio_channels` < 2"]]
+    ],
+    'video-quality' => [
+      'uhd' => ['text' => 'UHD', 'class' => 'success', 'hint' => '4k or higher', 'filters' => ["`media_items`.`width` >= 2160"]],
+      'hd' => ['text' => 'HD', 'class' => 'info', 'hint' => '1080p or higher, below 4k', 'filters' => ["`media_items`.`width` < 2160", "`media_items`.`width` >= 1920"]],
+      'sd' => ['text' => 'SD', 'class' => 'warning', 'hint' => '720p or higher, below 1080p', 'filters' => ["`media_items`.`width` < 1920", "`media_items`.`width` >= 1280"]],
+      'other' => ['text' => 'Other', 'class' => 'danger', 'hint' => 'below 720p', 'filters' => ["`media_items`.`width` < 1280"]]
+    ]
+  ];
 
   public function __construct($requireConfigured = true, $requireValidSession = true, $requireAdmin = true, $requireIndex = false) {
-    session_start();
+    session_start([
+      'save_path' => '/config/sessions',
+      'name' => '_sess_inspectorr',
+      'gc_maxlifetime' => 60 * 60 * 24 * 7,
+      'cookie_lifetime' => 60 * 60 * 24 * 7,
+      'cookie_secure' => true,
+      'cookie_httponly' => true,
+      'use_strict_mode' => true
+    ]);
 
     if (is_writable($this->dbFile)) {
       $this->connectDb($this->dbConn, $this->dbFile);
@@ -345,7 +287,7 @@ FROM `users`
 ORDER BY `last_name`, `first_name`
 EOQ;
     if ($users = $this->dbConn->query($query)) {
-      $output = array();
+      $output = [];
       while ($user = $users->fetchArray(SQLITE3_ASSOC)) {
         $output[] = $user;
       }
@@ -379,7 +321,7 @@ EOQ;
     return false;
   }
 
-  public function putEvent($action, $message = array()) {
+  public function putEvent($action, $message = []) {
     $user_id = array_key_exists('authenticated', $_SESSION) ? $_SESSION['user_id'] : null;
     $action = $this->dbConn->escapeString($action);
     $message = $this->dbConn->escapeString(json_encode($message));
@@ -405,7 +347,7 @@ ORDER BY `date` DESC
 LIMIT {$start}, {$this->pageLimit};
 EOQ;
     if ($events = $this->dbConn->query($query)) {
-      $output = array();
+      $output = [];
       while ($event = $events->fetchArray(SQLITE3_ASSOC)) {
         $output[] = $event;
       }
@@ -460,7 +402,7 @@ GROUP BY `library_sections`.`id`
 ORDER BY `library_sections`.`name`;
 EOQ;
     if ($libraries = $this->plexDbConn->query($query)) {
-      $output = array();
+      $output = [];
       while ($library = $libraries->fetchArray(SQLITE3_ASSOC)) {
         $output[$library['id']] = $library;
       }
@@ -484,7 +426,7 @@ ORDER BY CASE `status`
 END;
 EOQ;
     if ($counts = $this->plexDbConn->query($query)) {
-      $output = array();
+      $output = [];
       while ($count = $counts->fetchArray(SQLITE3_ASSOC)) {
         $output[$count['status']] = $count;
       }
@@ -509,7 +451,7 @@ ORDER BY CASE `status`
 END, `section_locations`.`id`;
 EOQ;
     if ($sections = $this->plexDbConn->query($query)) {
-      $output = array();
+      $output = [];
       while ($section = $sections->fetchArray(SQLITE3_ASSOC)) {
         $output[$section['status']][$section['id']] = $section;
       }
@@ -556,7 +498,7 @@ EOQ;
           break;
       }
       if ($details = $this->plexDbConn->query($query)) {
-        $output = array();
+        $output = [];
         while ($detail = $details->fetchArray(SQLITE3_ASSOC)) {
           $output[] = vsprintf($format, $detail);
         }

@@ -2,8 +2,8 @@
 require_once('../inc/inspectorr.class.php');
 $inspectorr = new Inspectorr(false, false, false, false);
 
-$output = $logFields = array('success' => null, 'message' => null);
-$log = array();
+$output = $logFields = ['success' => null, 'message' => null];
+$log = [];
 $putEvent = true;
 
 switch ($_REQUEST['func']) {
