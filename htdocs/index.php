@@ -28,11 +28,9 @@ if ($inspectorr->isAdmin()) {
         <div class='card-header border-bottom-0'>
           <ul class='nav nav-tabs card-header-tabs float-left'>
 <?php
-$i = 0;
 foreach ($inspectorr->tabs as $tab => $details) {
-  $class = $i++ == 0 ? 'nav-link active' : 'nav-link';
   echo "            <li class='nav-item mb-0'>" . PHP_EOL;
-  echo "              <a class='{$class} px-3 border-bottom-0' data-toggle='tab' data-target='#{$tab}' data-child='#{$tab}-legend' href='javascript:void(0)'>" . PHP_EOL;
+  echo "              <a class='nav-link px-3 border-bottom-0' data-toggle='tab' data-target='#{$tab}' data-child='#{$tab}-legend' id='{$tab}-tab' href='javascript:void(0)'>" . PHP_EOL;
   echo "                <h4 class='mb-0'>" . PHP_EOL;
   echo "                  <span class='fa fa-fw fa-{$details['icon']}'></span>" . PHP_EOL;
   echo "                  <span class='d-none d-md-inline'>{$details['text']}</span>" . PHP_EOL;
@@ -47,10 +45,8 @@ foreach ($inspectorr->tabs as $tab => $details) {
         <div class='card-body'>
           <div class='tab-content'>
 <?php
-$i = 0;
 foreach ($inspectorr->statuses as $tab => $statuses) {
-  $class = $i++ == 0 ? 'tab-pane fade active show' : 'tab-pane fade';
-  echo "            <div class='{$class}' id='{$tab}'>" . PHP_EOL;
+  echo "            <div class='tab-pane fade' id='{$tab}'>" . PHP_EOL;
   foreach ($inspectorr->getLibraries() as $library) {
     $libraryStatusCounts = $inspectorr->getLibraryStatusCounts($tab, $library['id']);
     $libraryStatusSectionCounts = $inspectorr->getLibraryStatusSectionCounts($tab, $library['id']);
@@ -72,7 +68,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
     echo "              </div>" . PHP_EOL;
     foreach ($libraryStatusSectionCounts as $status => $librarySectionCounts) {
       $statusPercent = round($libraryStatusCounts[$status]['count'] * 100 / $library['count'], 2);
-      echo "              <div class='card border-{$statuses[$status]['class']} mb-3 collapse' id='{$tab}-{$library['id']}-{$status}'>" . PHP_EOL;
+      echo "              <div class='card border-{$statuses[$status]['class']} mb-3 collapse id-status' id='{$tab}-{$library['id']}-{$status}'>" . PHP_EOL;
       echo "                <div class='card-header'>" . PHP_EOL;
       echo "                  <h5 class='text-{$statuses[$status]['class']} mb-0'>" . PHP_EOL;
       echo "                    <span>{$statuses[$status]['text']}</span>" . PHP_EOL;
@@ -88,7 +84,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
         echo "                    <span class='fa fa-chevron-down'></span>" . PHP_EOL;
         echo "                  </a>" . PHP_EOL;
         echo "                </div>" . PHP_EOL;
-        echo "                <div class='card-body collapse p-0' data-tab='{$tab}' data-library='{$library['id']}' data-status='{$librarySectionCount['status']}' data-section='{$librarySectionCount['id']}' id='{$tab}-{$library['id']}-{$librarySectionCount['status']}-{$librarySectionCount['id']}'>" . PHP_EOL;
+        echo "                <div class='card-body collapse p-0 id-section' data-tab='{$tab}' data-library='{$library['id']}' data-status='{$librarySectionCount['status']}' data-section='{$librarySectionCount['id']}' id='{$tab}-{$library['id']}-{$librarySectionCount['status']}-{$librarySectionCount['id']}'>" . PHP_EOL;
         echo "                  <div class='p-3'></div>" . PHP_EOL;
         echo "                </div>" . PHP_EOL;
       }
@@ -103,10 +99,8 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
         <div class='card-footer'>
           <div class='tab-content'>
 <?php
-$i = 0;
 foreach ($inspectorr->statuses as $tab => $statuses) {
-  $class = $i++ == 0 ? 'tab-pane active' : 'tab-pane';
-  echo "            <div class='{$class}' id='{$tab}-legend'>" . PHP_EOL;
+  echo "            <div class='tab-pane' id='{$tab}-legend'>" . PHP_EOL;
   foreach ($statuses as $status) {
     echo "              <span class='badge badge-{$status['class']}' title='{$status['hint']}'>{$status['text']}</span>" . PHP_EOL;
   }
@@ -123,18 +117,15 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
     <script>
       $(document).ready(function() {
         $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-          $($(e.target).data('child')).addClass('active');
+          $($(e.target).data('child')).addClass('active show');
+          sessionStorage.setItem('tab', $(e.target).data('target'));
         });
 
         $('a[data-toggle="tab"]').on('hidden.bs.tab', function(e) {
-          $($(e.target).data('child')).removeClass('active');
+          $($(e.target).data('child')).removeClass('active show');
         });
 
-        $('a.badge').click(function() {
-          $(this).children('span.fa').toggleClass('fa-flip-vertical');
-        });
-
-        $('div.card-body.collapse').on('show.bs.collapse', function() {
+        $('div.id-section').on('show.bs.collapse', function() {
           var parent = $(this).children('div');
           if (!parent.has('p').length) {
             $('#loading').removeClass('fa-exclamation-triangle').addClass('fa-spinner fa-pulse');
@@ -156,6 +147,16 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
                 $(this).removeClass('fa-spinner fa-pulse').addClass('fa-exclamation-triangle');
               });
           }
+        });
+
+        if (result = sessionStorage.getItem('tab')) {
+          $(`${result}-tab`).tab('show');
+        } else {
+          $('a[data-toggle="tab"]:first').tab('show');
+        }
+
+        $('a.badge').click(function() {
+          $(this).children('span.fa').toggleClass('fa-flip-vertical');
         });
 
         $('button.id-nav').click(function() {
