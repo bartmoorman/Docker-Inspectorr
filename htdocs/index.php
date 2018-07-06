@@ -118,7 +118,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
       $(document).ready(function() {
         $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
           $($(e.target).data('child')).addClass('active show');
-          sessionStorage.setItem('tab', $(e.target).data('target'));
+          localStorage.setItem('tab', $(e.target).data('target'));
         });
 
         $('a[data-toggle="tab"]').on('hidden.bs.tab', function(e) {
@@ -149,7 +149,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
           }
         });
 
-        if (result = sessionStorage.getItem('tab')) {
+        if (result = localStorage.getItem('tab')) {
           $(`${result}-tab`).tab('show');
         } else {
           $('a[data-toggle="tab"]:first').tab('show');
