@@ -390,9 +390,27 @@ EOQ;
     return $filters;
   }
 
+  public function getLibraryIcon($section_type, $language) {
+    switch ($section_type) {
+      case 1:
+        switch ($language) {
+          case 'xn':
+            return 'video';
+            break;
+          default:
+            return 'film';
+        }
+        break;
+      case 2:
+        return 'tv';
+        break;
+    }
+    return false;
+  }
+
   public function getLibraries() {
     $query = <<<EOQ
-SELECT `library_sections`.`id`, `library_sections`.`name`, COUNT(*) AS `count`
+SELECT `library_sections`.`id`, `library_sections`.`name`, `library_sections`.`section_type`, `library_sections`.`language`, COUNT(*) AS `count`
 FROM `library_sections`
 JOIN `metadata_items` ON `metadata_items`.`library_section_id` = `library_sections`.`id`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`

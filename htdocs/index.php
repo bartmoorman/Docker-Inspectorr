@@ -51,6 +51,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
     $libraryStatusCounts = $inspectorr->getLibraryStatusCounts($tab, $library['id']);
     $libraryStatusSectionCounts = $inspectorr->getLibraryStatusSectionCounts($tab, $library['id']);
     echo "              <h4>" . PHP_EOL;
+    echo "                <span class='fa fa-fw fa-{$inspectorr->getLibraryIcon($library['section_type'], $library['language'])}'></span>" . PHP_EOL;
     echo "                <span>{$library['name']}</span>" . PHP_EOL;
     foreach($libraryStatusCounts as $libraryStatusCount) {
       $statusCount = number_format($libraryStatusCount['count']);
