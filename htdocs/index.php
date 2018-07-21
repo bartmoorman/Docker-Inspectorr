@@ -14,14 +14,7 @@ $inspectorr = new Inspectorr(true, true, false, false);
   </head>
   <body>
 <?php
-if ($inspectorr->isAdmin()) {
-  $homeLoc = dirname($_SERVER['PHP_SELF']);
-  echo "    <nav class='navbar'>" . PHP_EOL;
-  echo "      <button class='btn btn-sm btn-outline-success id-nav' data-href='{$homeLoc}'>Home</button>" . PHP_EOL;
-  echo "      <button class='btn btn-sm btn-outline-info ml-auto mr-2 id-nav' data-href='users.php'>Users</button>" . PHP_EOL;
-  echo "      <button class='btn btn-sm btn-outline-info id-nav' data-href='events.php'>Events</button>" . PHP_EOL;
-  echo "    </nav>" . PHP_EOL;
-}
+include_once('header.php');
 ?>
     <div class='container'>
       <div class='card'>

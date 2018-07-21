@@ -13,11 +13,9 @@ $inspectorr = new Inspectorr(true, true, true, false);
     <link rel='stylesheet' href='//use.fontawesome.com/releases/v5.1.0/css/all.css' integrity='sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt' crossorigin='anonymous'>
   </head>
   <body>
-    <nav class='navbar'>
-      <button class='btn btn-sm btn-outline-success id-nav' data-href='<?php echo dirname($_SERVER['PHP_SELF']) ?>'>Home</button>
-      <button class='btn btn-sm btn-outline-info ml-auto mr-2 id-nav' data-href='users.php'>Users</button>
-      <button class='btn btn-sm btn-outline-info id-nav' data-href='events.php'>Events</button>
-    </nav>
+<?php
+include_once('header.php');
+?>
     <div class='container'>
       <table class='table table-striped table-hover table-sm'>
         <thead>
@@ -85,6 +83,7 @@ if ($nextPage > $pages) {
         $('button.id-nav').click(function() {
           location.href=$(this).data('href');
         });
+
         $('a.id-page').click(function() {
           location.href=URI().removeQuery('page').addQuery('page', $(this).data('page'));
         });
