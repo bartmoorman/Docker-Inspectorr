@@ -135,7 +135,11 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
                 });
               })
               .fail(function(jqxhr, textStatus, errorThrown) {
-                console.log(`getLibraryStatusSectionDetails failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+                if (jqxhr.status == 403) {
+                  location.reload();
+                } else {
+                  console.log(`getLibraryStatusSectionDetails failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
+                }
               })
               .always(function() {
                 $(this).removeClass('fa-spinner fa-pulse').addClass('fa-exclamation-triangle');
