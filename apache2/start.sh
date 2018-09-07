@@ -9,7 +9,7 @@ export PMS_DATABASE="${PMS_CONFIG_DIR}/${PMS_APPLICATIOM_SUPPORT_DIR}/${PMS_DATA
 chown www-data: /config
 
 if [ ! -d /config/sessions ]; then
-    install -o www-data -g www-data -d /config/sessions
+    install --owner www-data --group www-data --directory /config/sessions
 fi
 
 if [ ! -d /config/httpd/ssl ]; then
@@ -30,5 +30,5 @@ fi
 
 exec $(which apache2ctl) \
     -D FOREGROUND \
-    -D ${HTTPD_SECURITY:-HTTPD_SSL} \
-    -D ${HTTPD_REDIRECT:-HTTPD_REDIRECT_SSL}
+    -D ${HTTPD_SSL:-SSL} \
+    -D ${HTTPD_REDIRECT:-REDIRECT}
