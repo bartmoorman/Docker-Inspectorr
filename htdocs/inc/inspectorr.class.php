@@ -79,6 +79,11 @@ class Inspectorr {
 
   private function initDb() {
     $query = <<<EOQ
+CREATE TABLE IF NOT EXISTS `config` (
+  `config_id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `key` TEXT NOT NULL UNIQUE,
+  `value` TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS `users` (
   `user_id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `username` TEXT NOT NULL UNIQUE,
