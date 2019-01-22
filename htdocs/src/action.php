@@ -116,7 +116,8 @@ switch ($_REQUEST['func']) {
 }
 
 if ($putEvent) {
-  $inspectorr->putEvent($_REQUEST['func'], array_merge(array_intersect_key($output, $logFields), $log));
+  $user_id = array_key_exists('authenticated', $_SESSION) ? $_SESSION['user_id'] : null;
+  $inspectorr->putEvent($user_id, $_REQUEST['func'], array_merge(array_intersect_key($output, $logFields), $log));
 }
 
 header('Content-Type: application/json');
