@@ -49,7 +49,7 @@ foreach ($inspectorr->getEvents($currentPage) as $event) {
     <nav>
       <ul class='pagination justify-content-center'>
 <?php
-$pages = ceil($inspectorr->getCount('events') / $inspectorr->pageLimit);
+$pages = ceil($inspectorr->getObjectCount('events') / $inspectorr->pageLimit);
 $group = ceil($currentPage / 5);
 $previousPage = $currentPage - 1;
 $nextPage = $currentPage + 1;
