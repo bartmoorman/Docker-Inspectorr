@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `first_name` TEXT NOT NULL,
   `last_name` TEXT,
   `role` TEXT NOT NULL,
+  `begin` INTEGER,
+  `end` INTEGER,
   `disabled` INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS `events` (
@@ -182,6 +184,8 @@ EOQ;
 SELECT COUNT(*)
 FROM `{$table}`
 WHERE `{$type}` = '{$value}'
+AND (`begin` IS NULL OR `begin` < STRFTIME('%s', 'now', 'localtime'))
+AND (`end` IS NULL OR `end` > STRFTIME('%s', 'now', 'localtime'))
 AND NOT `disabled`;
 EOQ;
     if ($this->dbConn->querySingle($query)) {
@@ -234,7 +238,7 @@ EOQ;
     return false;
   }
 
-  public function createUser($username, $password, $first_name, $last_name = null, $role) {
+  public function createUser($username, $password, $first_name, $last_name = null, $role, $begin = null, $end = null) {
     $username = $this->dbConn->escapeString($username);
     $query = <<<EOQ
 SELECT COUNT(*)
@@ -246,10 +250,12 @@ EOQ;
       $first_name = $this->dbConn->escapeString($first_name);
       $last_name = $this->dbConn->escapeString($last_name);
       $role = $this->dbConn->escapeString($role);
+      $begin = $this->dbConn->escapeString($begin);
+      $end = $this->dbConn->escapeString($end);
       $query = <<<EOQ
 INSERT
-INTO `users` (`username`, `password`, `first_name`, `last_name`, `role`)
-VALUES ('{$username}', '{$password}', '{$first_name}', '{$last_name}', '{$role}');
+INTO `users` (`username`, `password`, `first_name`, `last_name`, `role`, `begin`, `end`)
+VALUES ('{$username}', '{$password}', '{$first_name}', '{$last_name}', '{$role}', STRFTIME('%s', '{$begin}'), STRFTIME('%s', '{$end}'));
 EOQ;
       if ($this->dbConn->exec($query)) {
         return true;
@@ -281,7 +287,7 @@ EOQ;
     return false;
   }
 
-  public function updateUser($user_id, $username, $password = null, $first_name, $last_name = null, $role) {
+  public function updateUser($user_id, $username, $password = null, $first_name, $last_name = null, $role, $begin = null, $end = null) {
     $user_id = $this->dbConn->escapeString($user_id);
     $username = $this->dbConn->escapeString($username);
     $query = <<<EOQ
@@ -301,6 +307,8 @@ EOQ;
       $first_name = $this->dbConn->escapeString($first_name);
       $last_name = $this->dbConn->escapeString($last_name);
       $role = $this->dbConn->escapeString($role);
+      $begin = $this->dbConn->escapeString($begin);
+      $end = $this->dbConn->escapeString($end);
       $query = <<<EOQ
 UPDATE `users`
 SET
@@ -308,7 +316,9 @@ SET
 {$passwordQuery}
   `first_name` = '{$first_name}',
   `last_name` = '{$last_name}',
-  `role` = '{$role}'
+  `role` = '{$role}',
+  `begin` = STRFTIME('%s', '{$begin}'),
+  `end` = STRFTIME('%s', '{$end}')
 WHERE `user_id` = '{$user_id}';
 EOQ;
       if ($this->dbConn->exec($query)) {
@@ -400,7 +410,7 @@ EOQ;
     switch ($type) {
       case 'users':
         $query = <<<EOQ
-SELECT `user_id`, `username`, `first_name`, `last_name`, `role`, `disabled`
+SELECT `user_id`, `username`, `first_name`, `last_name`, `role`, `begin`, `end`, `disabled`
 FROM `users`
 ORDER BY `last_name`, `first_name`;
 EOQ;
@@ -428,7 +438,7 @@ EOQ;
     switch ($type) {
       case 'user':
         $query = <<<EOQ
-SELECT `user_id`, `username`, `first_name`, `last_name`, `role`, `disabled`
+SELECT `user_id`, `username`, `first_name`, `last_name`, `role`, STRFTIME('%Y-%m-%dT%H:%M', `begin`, 'unixepoch') AS `begin`, STRFTIME('%Y-%m-%dT%H:%M', `end`, 'unixepoch') AS `end`, `disabled`
 FROM `users`
 WHERE `user_id` = '{$value}';
 EOQ;

@@ -21,7 +21,9 @@ switch ($_REQUEST['func']) {
     if (!$inspectorr->isConfigured() || ($inspectorr->isValidSession() && $inspectorr->isAdmin())) {
       if (!empty($_REQUEST['username']) && !empty($_REQUEST['password']) && !empty($_REQUEST['first_name']) && !empty($_REQUEST['role'])) {
         $last_name = !empty($_REQUEST['last_name']) ? $_REQUEST['last_name'] : null;
-        $output['success'] = $inspectorr->createUser($_REQUEST['username'], $_REQUEST['password'], $_REQUEST['first_name'], $last_name, $_REQUEST['role']);
+        $begin = !empty($_REQUEST['begin']) ? $_REQUEST['begin'] : null;
+        $end = !empty($_REQUEST['end']) ? $_REQUEST['end'] : null;
+        $output['success'] = $inspectorr->createUser($_REQUEST['username'], $_REQUEST['password'], $_REQUEST['first_name'], $last_name, $_REQUEST['role'], $begin, $end);
       } else {
         header('HTTP/1.1 400 Bad Request');
         $output['success'] = false;
@@ -56,7 +58,9 @@ switch ($_REQUEST['func']) {
       if (!empty($_REQUEST['user_id']) && !empty($_REQUEST['username']) && !empty($_REQUEST['first_name']) && !empty($_REQUEST['role'])) {
         $password = !empty($_REQUEST['password']) ? $_REQUEST['password'] : null;
         $last_name = !empty($_REQUEST['last_name']) ? $_REQUEST['last_name'] : null;
-        $output['success'] = $inspectorr->updateUser($_REQUEST['user_id'], $_REQUEST['username'], $password, $_REQUEST['first_name'], $last_name, $_REQUEST['role']);
+        $begin = !empty($_REQUEST['begin']) ? $_REQUEST['begin'] : null;
+        $end = !empty($_REQUEST['end']) ? $_REQUEST['end'] : null;
+        $output['success'] = $inspectorr->updateUser($_REQUEST['user_id'], $_REQUEST['username'], $password, $_REQUEST['first_name'], $last_name, $_REQUEST['role'], $begin, $end);
         $log['user_id'] = $_REQUEST['user_id'];
       } else {
         header('HTTP/1.1 400 Bad Request');
