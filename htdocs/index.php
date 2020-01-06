@@ -52,12 +52,12 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
     echo "              </h4>" . PHP_EOL;
     echo "              <div class='progress mb-3'>" . PHP_EOL;
     foreach ($libraryStatusCounts as $libraryStatusCount) {
-      $statusPercent = round($libraryStatusCount['count'] * 100 / $library['count'], 2);
+      $statusPercent = round($libraryStatusCount['count'] * 100 / $library['count'], 3);
       echo "                <div class='progress-bar progress-bar-striped bg-{$statuses[$libraryStatusCount['status']]['class']}' style='width: {$statusPercent}%'></div>" . PHP_EOL;
     }
     echo "              </div>" . PHP_EOL;
     foreach ($libraryStatusSectionCounts as $status => $librarySectionCounts) {
-      $statusPercent = round($libraryStatusCounts[$status]['count'] * 100 / $library['count'], 2);
+      $statusPercent = round($libraryStatusCounts[$status]['count'] * 100 / $library['count'], 3);
       echo "              <div class='card border-{$statuses[$status]['class']} mb-3 collapse id-status' id='{$tab}-{$library['id']}-{$status}'>" . PHP_EOL;
       echo "                <div class='card-header'>" . PHP_EOL;
       echo "                  <h5 class='text-{$statuses[$status]['class']} mb-0'>" . PHP_EOL;
