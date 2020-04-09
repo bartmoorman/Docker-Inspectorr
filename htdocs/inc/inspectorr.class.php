@@ -280,7 +280,7 @@ EOQ;
       $query = <<<EOQ
 INSERT
 INTO `apps` (`name`, `token`, `begin`, `end`)
-VALUES ('{$name}', '{$token}', STRFTIME('%s','{$begin}',) STRFTIME('%s','{$end}'));
+VALUES ('{$name}', '{$token}', STRFTIME('%s','{$begin}'), STRFTIME('%s','{$end}'));
 EOQ;
       if ($this->dbConn->exec($query)) {
         return true;
