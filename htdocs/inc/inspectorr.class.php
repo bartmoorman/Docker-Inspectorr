@@ -1,5 +1,6 @@
 <?php
 class Inspectorr {
+  public $appName = 'Inspectorr';
   private $dbFile = '/config/inspectorr.db';
   private $dbConn;
   private $plexDbConn;

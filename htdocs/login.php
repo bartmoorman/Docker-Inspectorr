@@ -5,7 +5,7 @@ $inspectorr = new Inspectorr(true, false, false, true);
 <!DOCTYPE html>
 <html lang='en'>
   <head>
-    <title>Inspectorr - Login</title>
+    <title><?php echo $inspectorr->appName ?> - Login</title>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
 <?php require_once('include.css'); ?>
