@@ -16,7 +16,7 @@ $inspectorr = new Inspectorr(false, true, false, true);
         <div class='modal-content'>
           <form>
             <div class='modal-header'>
-              <h5 class='modal-title'>Inspectorr Setup</h5>
+              <h5 class='modal-title'><?php echo $inspectorr->appName ?> Setup</h5>
             </div>
             <div class='modal-body'>
               <div class='form-row'>
