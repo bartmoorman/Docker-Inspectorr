@@ -36,7 +36,7 @@ foreach ($inspectorr->tabs as $tab => $details) {
 <?php
 foreach ($inspectorr->statuses as $tab => $statuses) {
   echo "            <div class='tab-pane fade' id='{$tab}'>" . PHP_EOL;
-  foreach ($inspectorr->getLibraries() as $library) {
+  foreach ($inspectorr->getLibraries($tab) as $library) {
     $libraryStatusCounts = $inspectorr->getLibraryStatusCounts($tab, $library['id']);
     $libraryStatusSectionCounts = $inspectorr->getLibraryStatusSectionCounts($tab, $library['id']);
     echo "              <h4>" . PHP_EOL;

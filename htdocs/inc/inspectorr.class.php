@@ -6,9 +6,10 @@ class Inspectorr {
   private $plexDbConn;
   public $pageLimit = 20;
   public $tabs = [
-    'index-status' => ['text' => 'Index Status', 'icon' => 'check'],
-    'audio-quality' => ['text' => 'Audio Quality', 'icon' => 'headphones'],
-    'video-quality' => ['text' => 'Video Quality', 'icon' => 'video']
+    'index-status' => ['text' => 'Index Status', 'icon' => 'check', 'section_types' => [1, 2]],
+    'audio-quality' => ['text' => 'Audio Quality', 'icon' => 'headphones', 'section_types' => [1, 2]],
+    'video-quality' => ['text' => 'Video Quality', 'icon' => 'video', 'section_types' => [1, 2]],
+    'intro-skip' => ['text' => 'Intro Skip', 'icon' => 'forward', 'section_types' => [2]]
   ];
   public $statuses = [
     'index-status' => [
@@ -28,7 +29,11 @@ class Inspectorr {
       'hd' => ['text' => 'HD', 'class' => 'info', 'hint' => '1080p or higher, below 4k', 'filters' => ["`media_items`.`width` < 2160", "`media_items`.`width` >= 1920"]],
       'sd' => ['text' => 'SD', 'class' => 'warning', 'hint' => '720p or higher, below 1080p', 'filters' => ["`media_items`.`width` < 1920", "`media_items`.`width` >= 1280"]],
       'other' => ['text' => 'Other', 'class' => 'danger', 'hint' => 'below 720p', 'filters' => ["`media_items`.`width` < 1280"]]
-    ]
+    ],
+    'intro-skip' => [
+      'complete' => ['text' => 'Complete', 'class' => 'success', 'hint' => 'Analysis is complete', 'filters' => ["`media_parts`.`extra_data` LIKE '%intros%'"]],
+      'pending' => ['text' => 'Pending', 'class' => 'info', 'hint' => 'Analysis has not started', 'filters' => ["`media_parts`.`extra_data` NOT LIKE '%intros%'"]]
+    ],
   ];
 
   public function __construct($requireConfigured = true, $requireValidSession = true, $requireAdmin = true, $requireIndex = false) {
@@ -575,14 +580,15 @@ EOQ;
     return false;
   }
 
-  public function getLibraries() {
+  public function getLibraries($tab) {
+    $section_types = implode(', ', $this->tabs[$tab]['section_types']);
     $query = <<<EOQ
 SELECT `library_sections`.`id`, `library_sections`.`name`, `library_sections`.`section_type`, `library_sections`.`language`, COUNT(*) AS `count`
 FROM `library_sections`
 JOIN `metadata_items` ON `metadata_items`.`library_section_id` = `library_sections`.`id`
 JOIN `media_items` ON `media_items`.`metadata_item_id` = `metadata_items`.`id`
 JOIN `media_parts` ON `media_parts`.`media_item_id` = `media_items`.`id`
-WHERE `library_sections`.`section_type` IN (1, 2)
+WHERE `library_sections`.`section_type` IN ({$section_types})
 GROUP BY `library_sections`.`id`
 ORDER BY `library_sections`.`name`;
 EOQ;
