@@ -1,8 +1,11 @@
 <?php
+date_default_timezone_set(getenv('TZ'));
+
 class Inspectorr {
   public $appName = 'Inspectorr';
   private $dbFile = '/config/inspectorr.db';
   private $dbConn;
+  private $plexDbFile;
   private $plexDbConn;
   public $pageLimit = 20;
   public $tabs = [
@@ -71,8 +74,15 @@ class Inspectorr {
       exit;
     }
 
-    if (is_readable(getenv('PMS_DATABASE'))) {
-      $this->connectDb($this->plexDbConn, getenv('PMS_DATABASE'));
+
+    $pmsConfigDir = getenv('PMS_CONFIG_DIR') ?: '/data';
+    $pmsApplicationSupportDir = getenv('PMS_APPLICATIOM_SUPPORT_DIR') ?: 'Library/Application Support';
+    $pmsDatabaseDir = getenv('PMS_DATABASE_DIR') ?: 'Plex Media Server/Plug-in Support/Databases';
+    $pmsDatabaseFile = getenv('PMS_DATABASE_FILE') ?: 'com.plexapp.plugins.library.db';
+    $this->plexDbFile = sprintf('%s/%s/%s/%s', $pmsConfigDir, $pmsApplicationSupportDir, $pmsDatabaseDir, $pmsDatabaseFile);
+
+    if (is_readable($this->plexDbFile)) {
+      $this->connectDb($this->plexDbConn, $this->plexDbFile);
     }
   }
 
