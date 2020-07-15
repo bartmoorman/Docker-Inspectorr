@@ -121,7 +121,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
               .done(function(data) {
                 if (data.success) {
                   $.each(data.data, function(key, value) {
-                    $(`<p class='text-muted mb-0'>${value}</p>`).appendTo(parent);
+                    $(`<p class='text-muted text-monospace mb-0'>${value}</p>`).appendTo(parent);
                   });
                 }
                 $('#loading').on('animationiteration', function() {
