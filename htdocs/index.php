@@ -129,7 +129,7 @@ foreach ($inspectorr->statuses as $tab => $statuses) {
                 });
               })
               .fail(function(jqxhr, textStatus, errorThrown) {
-                if (jqxhr.status == 403) {
+                if (jqxhr.status == 401) {
                   location.reload();
                 } else {
                   console.log(`getLibraryStatusSectionDetails failed: ${jqxhr.status} (${jqxhr.statusText}), ${textStatus}, ${errorThrown}`);
